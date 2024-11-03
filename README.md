@@ -27,4 +27,25 @@
 - **Technologie:**
     - **Technologický stack:** *Flutter* - open-source framework od Google pro tvorbu multiplatformních aplikací (Android, iOS, web, desktop) s použitím jediného kódu napsaného v jazyce Dart
     - **Platforma**: Android, iOS nebo webu.
-    - **Backend**: Firebase
+    - **Backend**: Supabase
+
+## Funkce
+
+- Přihlášení přes Google
+- Vytváření a správa balíčků kartiček
+- Studium kartiček s využitím spaced repetition
+- Practice mód pro procvičování
+- Offline podpora (TODO)
+
+## Technologie
+
+- Flutter
+- Riverpod pro state management
+- GoRouter pro navigaci
+- Supabase pro backend
+- Freezed pro generování kódu
+
+## Instalace
+
+1. Naklonujte repozitář
+
