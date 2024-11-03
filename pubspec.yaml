@@ -1,0 +1,43 @@
+name: repetito
+description: A flashcard app with spaced repetition.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  flutter_hooks: ^0.20.5
+  hooks_riverpod: ^2.5.1
+  
+  # Navigation
+  go_router: ^13.2.1
+  
+  # Supabase
+  supabase_flutter: ^2.3.4
+  
+  # Utils
+  url_launcher: ^6.2.5
+  logging: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # Code generation
+  build_runner: ^2.4.8
+  freezed: ^2.4.7
+  json_serializable: ^6.7.1
+  riverpod_generator: ^2.4.0
+  
+  # Linting
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
