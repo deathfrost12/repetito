@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../providers/card_list_provider.dart';
 import 'edit_deck_dialog.dart';
 import 'add_card_dialog.dart';
+import '../statistics/study_statistics_screen.dart';
 
 class DeckDetailScreen extends HookConsumerWidget {
   final DeckEntity deck;
@@ -86,16 +87,34 @@ class DeckDetailScreen extends HookConsumerWidget {
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: FilledButton.icon(
-              onPressed: () {
-                context.pushNamed(
-                  'study',
-                  pathParameters: {'deckId': deck.id},
-                  extra: deck,
-                );
-              },
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Začít studium'),
+            child: Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      context.pushNamed(
+                        'study',
+                        pathParameters: {'deckId': deck.id},
+                        extra: deck,
+                      );
+                    },
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Začít studium'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                IconButton.filledTonal(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => StudyStatisticsScreen(deck: deck),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.bar_chart),
+                  tooltip: 'Statistiky',
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),

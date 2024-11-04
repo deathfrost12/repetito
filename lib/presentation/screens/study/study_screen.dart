@@ -7,6 +7,7 @@ import '../../../domain/enums/difficulty_level.dart';
 import '../../providers/study_progress_provider.dart';
 import '../../providers/card_list_provider.dart';
 import 'package:go_router/go_router.dart';
+import '../../providers/study_statistics_provider.dart';
 
 class StudyScreen extends HookConsumerWidget {
   final DeckEntity deck;
@@ -22,6 +23,27 @@ class StudyScreen extends HookConsumerWidget {
     final isCardFlipped = useState(false);
     final currentCardIndex = useState(0);
     final isPracticeMode = useState(false);
+    final studyStartTime = useState(DateTime.now());
+    final cardStartTime = useState(DateTime.now());
+    final sessionStats = useState({
+      'totalTime': 0,
+      'easyCount': 0,
+      'mediumCount': 0,
+      'hardCount': 0,
+    });
+
+    int getCardStudyTime() {
+      return DateTime.now().difference(cardStartTime.value).inSeconds;
+    }
+
+    void updateSessionStats(DifficultyLevel difficulty, int studyTime) {
+      sessionStats.value = {
+        'totalTime': sessionStats.value['totalTime']! + studyTime,
+        'easyCount': sessionStats.value['easyCount']! + (difficulty == DifficultyLevel.easy ? 1 : 0),
+        'mediumCount': sessionStats.value['mediumCount']! + (difficulty == DifficultyLevel.medium ? 1 : 0),
+        'hardCount': sessionStats.value['hardCount']! + (difficulty == DifficultyLevel.hard ? 1 : 0),
+      };
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -185,17 +207,72 @@ class StudyScreen extends HookConsumerWidget {
                             onPressed: () async {
                               try {
                                 if (!isPracticeMode.value) {
+                                  final studyTime = getCardStudyTime();
+                                  
+                                  await ref.read(studyStatisticsNotifierProvider.notifier).updateStatistics(
+                                    deckId: deck.id,
+                                    difficulty: difficulty,
+                                    studyTimeSeconds: studyTime,
+                                  );
+
                                   await ref.read(studyProgressProvider.notifier).updateProgress(
                                     cardId: currentCard.id,
                                     difficulty: difficulty,
+                                    studyTimeSeconds: studyTime,
                                   );
+
+                                  updateSessionStats(difficulty, studyTime);
                                 }
                                 
                                 await Future.delayed(const Duration(milliseconds: 300));
                                 
                                 if (context.mounted) {
-                                  currentCardIndex.value++;
-                                  isCardFlipped.value = false;
+                                  if (currentCardIndex.value + 1 >= displayCards.length) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Souhrn studia'),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('Celkový čas: ${_formatTime(sessionStats.value['totalTime']!)}'),
+                                            const SizedBox(height: 8),
+                                            Text('Snadné: ${sessionStats.value['easyCount']}'),
+                                            Text('Střední: ${sessionStats.value['mediumCount']}'),
+                                            Text('Těžké: ${sessionStats.value['hardCount']}'),
+                                          ],
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                              context.go('/deck/${deck.id}');
+                                            },
+                                            child: const Text('Zpět na balíček'),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                              currentCardIndex.value = 0;
+                                              isCardFlipped.value = false;
+                                              sessionStats.value = {
+                                                'totalTime': 0,
+                                                'easyCount': 0,
+                                                'mediumCount': 0,
+                                                'hardCount': 0,
+                                              };
+                                            },
+                                            child: const Text('Začít znovu'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  } else {
+                                    currentCardIndex.value++;
+                                    isCardFlipped.value = false;
+                                    cardStartTime.value = DateTime.now();
+                                  }
                                 }
                               } catch (e) {
                                 if (context.mounted) {
@@ -225,6 +302,12 @@ class StudyScreen extends HookConsumerWidget {
         },
       ),
     );
+  }
+
+  String _formatTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 }
 

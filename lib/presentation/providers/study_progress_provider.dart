@@ -15,6 +15,7 @@ class StudyProgress extends _$StudyProgress {
   Future<void> updateProgress({
     required String cardId,
     required DifficultyLevel difficulty,
+    required int studyTimeSeconds,
   }) async {
     if (state.isLoading) {
       debugPrint('Již probíhá aktualizace, přeskakuji...');
@@ -29,6 +30,7 @@ class StudyProgress extends _$StudyProgress {
       await repository.updateProgress(
         cardId: cardId,
         difficulty: difficulty,
+        studyTimeSeconds: studyTimeSeconds,
       );
       debugPrint('Aktualizace úspěšně dokončena');
       state = const AsyncData(null);

@@ -13,6 +13,7 @@ abstract class AppConstants {
   static const String pathDecks = '/decks';
   static const String pathStudy = '/study/:deckId';
   static const String pathDeckDetail = '/deck/:id';
+  static const String pathStatistics = '/statistics/:deckId';
   
   // Storage
   static const String storageUserBucket = 'user_content';

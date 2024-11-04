@@ -5,9 +5,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants/app_constants.dart';
 import '../../presentation/screens/auth/login_screen.dart';
-import '../../presentation/screens/deck/deck_list_screen.dart';
+import '../../presentation/screens/main_screen.dart';
 import '../../presentation/screens/deck/deck_detail_screen.dart';
 import '../../presentation/screens/study/study_screen.dart';
+import '../../presentation/screens/statistics/study_statistics_screen.dart';
 import '../../../domain/entities/deck_entity.dart';
 
 part 'router.g.dart';
@@ -45,7 +46,7 @@ GoRouter router(RouterRef ref) {
       GoRoute(
         path: AppConstants.pathHome,
         name: 'home',
-        builder: (context, state) => const DeckListScreen(),
+        builder: (context, state) => const MainScreen(),
       ),
       GoRoute(
         path: AppConstants.pathDeckDetail,
@@ -56,11 +57,11 @@ GoRouter router(RouterRef ref) {
           
           if (deck == null && deckId != null) {
             // TODO: Načíst balíček podle ID
-            return const DeckListScreen();
+            return const MainScreen();
           }
           
           if (deck == null) {
-            return const DeckListScreen();
+            return const MainScreen();
           }
           
           return DeckDetailScreen(deck: deck);
@@ -75,14 +76,25 @@ GoRouter router(RouterRef ref) {
           
           if (deck == null && deckId != null) {
             // TODO: Načíst balíček podle ID
-            return const DeckListScreen();
+            return const MainScreen();
           }
           
           if (deck == null) {
-            return const DeckListScreen();
+            return const MainScreen();
           }
           
           return StudyScreen(deck: deck);
+        },
+      ),
+      GoRoute(
+        path: AppConstants.pathStatistics,
+        name: 'statistics',
+        builder: (context, state) {
+          final deck = state.extra as DeckEntity?;
+          if (deck == null) {
+            return const MainScreen();
+          }
+          return StudyStatisticsScreen(deck: deck);
         },
       ),
     ],
