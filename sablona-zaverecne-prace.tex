@@ -1,0 +1,394 @@
+% DOKUMENTACE K VÝVOJI MOBILNÍ APLIKACE V TECHNOLOGII FLUTTER
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Původní šablona: Jakub Dokulil (kubadokulil99@gmail.com)
+% Upraveno pro dokumentaci Flutter aplikace
+%
+\documentclass[12pt, a4paper,
+%oneside,      %% -- odkomentujte, pokud chcete svou práci mít pouze jednostrannou, mezera pro hřbet pak automaticky bude pouze na levé straně
+twoside,        %% -- pro oboustranné práce, mezera pro hřbet následně střídá strany.
+openright
+]{report}
+
+%% Nutné balíčky a nastavení
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Proměnné
+\newcommand\obor{INFORMAČNÍ TECHNOLOGIE} %% -- napiš číslo a název tvého oboru
+\newcommand\kodOboru{18-20-M/01} %% -- napiš číslo a název tvého oboru
+\newcommand\zamereni{se zaměřením na vývoj mobilních aplikací} %% -- upraveno pro zaměření práce
+\newcommand\skola{Střední škola průmyslová a umělecká, Opava} %% vyplň název školy
+\newcommand\trida{IT4} %% vyplň třídu
+\newcommand\jmenoAutora{Viktor Hujer}  %% vyplň své jméno
+\newcommand\skolniRok{2023/24} %% vyplň rok
+\newcommand\datumOdevzdani{22. 3. 2024} %% aktualizováno datum odevzdání
+\newcommand\nazevPrace{Vývoj mobilní aplikace pro správu dokumentace v technologii Flutter} %% aktualizován název práce
+
+\title{\nazevPrace} 
+\author{\jmenoAutora} 
+\date{\datumOdevzdani}
+
+\usepackage[top=2.5cm, bottom=2.5cm, left=3.5cm, right=1.5cm]{geometry} 
+
+\usepackage[czech]{babel} 
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc}
+\usepackage{cmap} 
+
+\usepackage{graphicx} 
+\usepackage{subcaption} 
+\usepackage{hyperref} 
+
+% Přidané balíčky pro kódové ukázky a diagramy
+\usepackage{minted} % Pro lepší zvýraznění syntaxe kódu
+\usepackage{tikz}   % Pro kreslení diagramů
+\usepackage{pgf-umlcd} % Pro UML diagramy
+
+\linespread{1.25} 
+\setlength{\parskip}{0.5em} 
+
+\usepackage[pagestyles]{titlesec} 
+\titleformat{\chapter}[block]{\scshape\bfseries\LARGE}{\thechapter}{10pt}{\vspace{0pt}}[\vspace{-22pt}]
+\titleformat{\section}[block]{\scshape\bfseries\Large}{\thesection}{10pt}{\vspace{0pt}}
+\titleformat{\subsection}[block]{\bfseries\large}{\thesubsection}{10pt}{\vspace{0pt}}
+
+\usepackage{tocloft}
+\setlength{\cftbeforechapskip}{0pt}
+\setlength{\cftbeforesecskip}{0pt}
+
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{1}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0.025pt}
+
+\usepackage{booktabs}
+\usepackage{url}
+
+% Definice stylu pro zdrojový kód Flutter/Dart
+\lstdefinelanguage{Dart}{
+  keywords={abstract, dynamic, implements, show, as, else, import, static,
+    assert, enum, in, super, async, export, interface, switch, await,
+    extends, is, sync, break, external, library, this, case, factory,
+    mixin, throw, catch, false, new, true, class, final, null, try,
+    const, finally, on, typedef, continue, for, operator, var, covariant,
+    Function, part, void, default, get, rethrow, while, deferred, hide,
+    return, with, do, if, set, yield},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  string=[b]",
+  string=[b]',
+  stringstyle=\color{forestgreen},
+  commentstyle=\color{mediumgray}\upshape,
+  keywordstyle=\color{mediumblue},
+}
+
+\begin{document}
+\pagestyle{empty}
+\pagenumbering{Roman}
+\cleardoublepage
+
+% Titulní strana
+{\fontfamily{phv}\selectfont
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\linewidth]{image/logo-skoly.png}
+\end{figure}
+
+{\bfseries
+\begin{center}
+    \vspace{0.025 \textheight}
+    \LARGE{ZÁVĚREČNÁ STUDIJNÍ PRÁCE}\\
+    \large{dokumentace}\\
+    \vspace{0.075 \textheight}
+    \LARGE {\nazevPrace}\\
+\end{center}
+}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{image/flutter-hero.png}
+    \caption{Flutter framework logo a ukázka multiplatformního vývoje \cite{flutterDev}}
+\end{figure}
+
+\vspace{0.02 \textheight}
+\begin{table}[h!]
+    \begin{tabular}{ll}
+        \textbf{Autor:} & \jmenoAutora\\
+        \textbf{Obor:} & \kodOboru { } \obor\\
+        \textbf{} & \zamereni\\
+        \textbf{Třída:} & \trida\\
+        \textbf{Školní rok:} & \skolniRok\\
+    \end{tabular}
+\end{table}
+}
+
+\cleardoublepage
+
+% Poděkování a prohlášení
+\noindent{\large{\bfseries{Poděkování}\\}}
+\noindent Děkuji vedoucímu práce za odborné vedení a cenné rady při vývoji mobilní aplikace. Zvláštní poděkování patří Flutter komunitě za poskytnutí kvalitních výukových materiálů a podpory při řešení technických problémů. Také děkuji své rodině za podporu během studia.
+
+\vspace*{0.7\textheight}
+
+\noindent{\large{\bfseries{Prohlášení}\\}}
+\noindent{Prohlašuji, že jsem závěrečnou práci vypracoval samostatně a uvedl veškeré použité informační zdroje. Veškerý použitý kód třetích stran je řádně citován a licencován v souladu s příslušnými licenčními podmínkami.\\}
+\noindent{Souhlasím, aby tato studijní práce byla použita k výukovým a prezentačním účel��m na Střední průmyslové a umělecké škole v Opavě, Praskova 399/8.}
+\vfill
+\noindent{V Opavě \datumOdevzdani\\}
+\noindent
+\begin{minipage}{\linewidth}
+    \hspace{9.5cm}
+    \begin{tabular}{@{}p{6cm}@{}}
+        \dotfill \\
+        Podpis autora
+    \end{tabular}
+\end{minipage}
+
+\cleardoublepage
+
+% Abstrakt
+\noindent{\Large{\bfseries{Abstrakt}\\}}
+\noindent Tato práce dokumentuje proces vývoje mobilní aplikace pro správu technické dokumentace pomocí frameworku Flutter. Aplikace je navržena s důrazem na moderní architekturu, využívá state management Riverpod a implementuje clean architecture principy. Práce popisuje celý vývojový cyklus od analýzy požadavků přes návrh architektury až po implementaci a testování. Součástí je také popis použitých technologií, včetně Flutter SDK, Dart programovacího jazyka a dalších klíčových knihoven. Výsledkem je multiplatformní aplikace umožňující efektivní správu dokumentace s podporou offline režimu a synchronizace dat.
+
+\vspace{18pt}
+
+\noindent{\large{\bfseries{Klíčová slova}}}
+\noindent Flutter, Dart, Riverpod, mobilní vývoj, dokumentace, state management, clean architecture, multiplatformní aplikace
+
+\vspace{18pt}
+
+\noindent{\Large{\bfseries{Abstract}}}
+\noindent This thesis documents the development process of a mobile application for technical documentation management using the Flutter framework. The application is designed with emphasis on modern architecture, utilizing Riverpod state management and implementing clean architecture principles. The work describes the entire development cycle from requirements analysis through architecture design to implementation and testing. It also includes a description of the technologies used, including Flutter SDK, Dart programming language, and other key libraries. The result is a cross-platform application enabling efficient documentation management with offline mode support and data synchronization.
+
+\vspace{18pt}
+
+\noindent{\large{\bfseries{Keywords}}}
+\noindent Flutter, Dart, Riverpod, mobile development, documentation, state management, clean architecture, cross-platform application
+
+\clearpage
+
+\tableofcontents
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% Hlavní kapitoly práce následují zde...
+\chapter{Úvod}
+\label{chap:uvod}
+
+Technická dokumentace je základním pilířem každého softwarového projektu. S rostoucí komplexitou vývoje aplikací roste i potřeba efektivní správy této dokumentace. Mobilní zařízení dnes představují primární způsob přístupu k informacím, proto jsem se rozhodl vyvinout aplikaci, která umožní správu technické dokumentace přímo z mobilního zařízení.
+
+Tato práce popisuje proces vývoje mobilní aplikace pomocí frameworku Flutter. Volba tohoto frameworku byla založena na jeho schopnosti vytvářet multiplatformní aplikace při zachování nativního vzhledu a výkonu.
+
+\section{Cíle práce}
+Hlavní cíle práce jsou:
+\begin{itemize}
+    \item Implementace editoru pro tvorbu dokumentace v markdown formátu
+    \item Zajištění offline dostupnosti dokumentů s automatickou synchronizací
+    \item Vytvoření systému pro verzování dokumentů
+    \item Implementace exportu do standardizovaných formátů (PDF, HTML)
+\end{itemize}
+
+\section{Metodika práce}
+Při vývoji aplikace jsem postupoval podle následující metodiky:
+\begin{enumerate}
+    \item Analýza požadavků a existujících řešení
+    \item Návrh architektury s důrazem na modularitu a testovatelnost
+    \item Iterativní implementace klíčových funkcionalit
+    \item Průběžné testování a optimalizace
+\end{enumerate}
+
+\chapter{Analýza a návrh řešení}
+\label{chap:analyza}
+
+\section{Analýza po��adavků}
+Na základě průzkumu potřeb uživatelů a analýzy existujících řešení jsem identifikoval následující klíčové požadavky:
+
+\subsection{Funkční požadavky}
+\begin{itemize}
+    \item Vytváření a editace dokumentů v markdown formátu
+    \item Správa verzí dokumentů s možností návratu k předchozím verzím
+    \item Offline přístup k dokumentům
+    \item Automatická synchronizace při dostupném připojení
+    \item Export dokumentů do PDF a HTML formátů
+\end{itemize}
+
+\subsection{Nefunkční požadavky}
+\begin{itemize}
+    \item Responzivní uživatelské rozhraní
+    \item Rychlá odezva aplikace (max. 100ms pro běžné operace)
+    \item Minimální spotřeba baterie při synchronizaci
+    \item Zabezpečené ukládání citlivých dat
+\end{itemize}
+
+\section{Technická specifikace}
+Pro implementaci jsem zvolil následující technologie:
+
+\begin{table}[h]
+\caption{Přehled použitých technologií}
+\label{tab:technologie}
+\begin{tabular}{ll}
+\toprule
+\textbf{Technologie} & \textbf{Účel použití} \\
+\midrule
+Flutter 3.19.0 & Framework pro vývoj multiplatformní aplikace \\
+Dart 3.3.0 & Programovací jazyk \\
+Riverpod & Správa stavu aplikace \\
+SQLite & Lokální databáze pro offline režim \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\chapter{Implementace}
+\label{chap:implementace}
+
+\section{Struktura projektu}
+Projekt je organizován podle principů Clean Architecture a feature-first přístupu. Toto rozdělení zajišťuje přehlednost kódu a snadnou rozšiřitelnost aplikace.
+
+\begin{lstlisting}[language=Dart, caption={Základní struktura projektu}, label={lst:struktura}]
+lib/
+  ├── core/              // Sdílené komponenty a utility
+  │   ├── constants/     // Konstanty aplikace
+  │   ├── theme/         // Definice vzhledu
+  │   └── utils/         // Pomocné funkce
+  ├── features/          // Funkční moduly aplikace
+  │   ├── documents/     // Správa dokumentů
+  │   │   ├── data/     // Datová vrstva
+  │   │   ├── domain/   // Byznys logika
+  │   │   └── presentation/  // UI komponenty
+  │   └── settings/     // Nastavení aplikace
+  └── main.dart         // Vstupní bod aplikace
+\end{lstlisting}
+
+\section{Implementace klíčových funkcionalit}
+
+\subsection{Správa stavu aplikace}
+Pro správu stavu využívám Riverpod, který poskytuje typově bezpečný přístup ke sdíleným datům:
+
+\begin{lstlisting}[language=Dart, caption={Implementace state managementu}, label={lst:state}]
+@riverpod
+class DocumentNotifier extends _$DocumentNotifier {
+  @override
+  FutureOr<List<Document>> build() async {
+    // Inicializace stavu
+    return _fetchDocuments();
+  }
+
+  Future<void> addDocument(Document document) async {
+    // Kontrola vstupních dat
+    if (document.title.isEmpty) {
+      throw const ValidationException('Název dokumentu je povinný');
+    }
+
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await _repository.saveDocument(document);
+      return _fetchDocuments();
+    });
+  }
+}
+\end{lstlisting}
+
+\subsection{Perzistence dat}
+Pro ukládání dat používám SQLite databázi s následující strukturou:
+
+\begin{lstlisting}[language=SQL, caption={Struktura databáze}, label={lst:db}]
+CREATE TABLE documents (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  is_synced INTEGER DEFAULT 0
+);
+\end{lstlisting}
+
+\section{Uživatelské rozhraní}
+Aplikace používá Material Design 3 pro konzistentní vzhled napříč platformami:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{image/app-screenshot.png}
+    \caption{Hlavní obrazovka aplikace s přehledem dokumentů}
+    \label{fig:main-screen}
+\end{figure}
+
+\chapter{Testování}
+\label{chap:testovani}
+
+\section{Unit testy}
+\begin{lstlisting}[language=Dart, caption={Příklad unit testu}]
+void main() {
+  test('Document creation test', () {
+    final document = Document(
+      id: '1',
+      title: 'Test',
+      content: 'Content',
+      createdAt: DateTime.now(),
+    );
+    
+    expect(document.title, 'Test');
+    expect(document.content, 'Content');
+  });
+}
+\end{lstlisting}
+
+\section{Widget testy}
+\begin{lstlisting}[language=Dart, caption={Widget test}]
+void main() {
+  testWidgets('MarkdownEditor test', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: MarkdownEditor(),
+        ),
+      ),
+    );
+
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byType(MarkdownPreview), findsOneWidget);
+  });
+}
+\end{lstlisting}
+
+\chapter{Závěr}
+\label{chap:zaver}
+
+Tato práce představila proces vývoje mobilní aplikace pro správu technické dokumentace pomocí frameworku Flutter. Byly splněny všechny stanovené cíle:
+
+\begin{itemize}
+    \item Vytvořena funkční aplikace s intuitivním rozhraním
+    \item Implementována podpora offline režimu
+    \item Zajištěna synchronizace dat mezi zařízeními
+    \item Realizován export do různých formátů
+\end{itemize}
+
+Během vývoje byly využity moderní technologie a postupy, které zajistily vysokou kvalitu výsledného produktu. Aplikace je připravena pro reálné nasazení a další rozvoj.
+
+\section{Možnosti dalšího rozvoje}
+Pro budoucí vývoj aplikace se nabízí několik směrů:
+\begin{itemize}
+    \item Implementace pokročilých funkcí pro týmovou spolupráci
+    \item Rozšíření podpory formátů pro import/export
+    \item Optimalizace výkonu pro rozsáhlé dokumenty
+    \item Integrace s dalšími službami pro správu dokumentace
+\end{itemize}
+
+% Bibliografie
+\begin{thebibliography}{99}
+\bibitem{flutterDev} Flutter Team. \textit{Flutter Documentation} [online]. Google, 2024 [cit. 2024-03-20]. Dostupné z: \url{https://flutter.dev/docs}
+
+\bibitem{riverpodDocs} ROUSSET, Remi. \textit{Riverpod Documentation} [online]. 2024 [cit. 2024-03-20]. Dostupné z: \url{https://riverpod.dev/docs/introduction/getting_started}
+
+\bibitem{dartLang} Google. \textit{Dart Programming Language} [online]. 2024 [cit. 2024-03-20]. Dostupné z: \url{https://dart.dev}
+
+\bibitem{cleanArch} MARTIN, Robert C. \textit{Clean Architecture: A Craftsman's Guide to Software Structure and Design}. Prentice Hall, 2017. ISBN 978-0134494166.
+\end{thebibliography}
+
+% Seznam obrázků
+\listoffigures
+
+% Seznam tabulek
+\listoftables
+
+\end{document}
