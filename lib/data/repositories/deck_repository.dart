@@ -12,6 +12,7 @@ DeckRepository deckRepository(DeckRepositoryRef ref) {
 
 class DeckRepository {
   final SupabaseClient _client;
+  final _cache = <String, DeckEntity>{};  // Jednoduchá cache
 
   DeckRepository(this._client);
 
@@ -35,16 +36,20 @@ class DeckRepository {
   }
 
   Future<List<DeckEntity>> getDecks() async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) throw Exception('Uživatel není přihlášen');
+    // Nejdřív zkusíme cache
+    if (_cache.isNotEmpty) {
+      return _cache.values.toList();
+    }
 
-    final response = await _client
-        .from('decks')
-        .select()
-        .eq('user_id', userId)
-        .order('created_at');
+    final response = await _client.from('decks').select();
+    final decks = response.map((row) => _mapToDeckEntity(row)).toList();
+    
+    // Uložíme do cache
+    for (var deck in decks) {
+      _cache[deck.id] = deck;
+    }
 
-    return response.map((row) => _mapToDeckEntity(row)).toList();
+    return decks;
   }
 
   Stream<List<DeckEntity>> watchDecks() {

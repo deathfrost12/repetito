@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../domain/entities/deck_entity.dart';
 import '../../providers/deck_list_provider.dart';
 import 'edit_deck_dialog.dart';
 
@@ -145,186 +146,126 @@ class _DeckListContent extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final decksAsync = ref.watch(deckListProvider);
-
+    final decksAsync = ref.watch(deckListProvider.select((value) => value));
+    
     return decksAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Text('Chyba: $error'),
-      ),
+      error: (error, stack) => Center(child: Text('Chyba: $error')),
       data: (decks) {
         if (decks.isEmpty) {
           return const _EmptyState();
         }
 
         return ListView.builder(
+          cacheExtent: 100,
           itemCount: decks.length,
           padding: const EdgeInsets.all(16),
           itemBuilder: (context, index) {
             final deck = decks[index];
-            return Dismissible(
-              key: Key(deck.id),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 16),
-                color: Colors.red,
-                child: const Icon(
-                  Icons.delete,
-                  color: Colors.white,
-                ),
-              ),
-              confirmDismiss: (direction) async {
-                return await showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Smazat balíček?'),
-                    content: Text('Opravdu chcete smazat balíček "${deck.name}"?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('Zrušit'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.red,
-                        ),
-                        child: const Text('Smazat'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              onDismissed: (direction) async {
-                try {
-                  final deletedDeck = deck;
-                  
-                  await ref.read(deleteDeckNotifierProvider.notifier).deleteDeck(deck.id);
-                  
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).clearSnackBars();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Balíček byl smazán'),
-                        action: SnackBarAction(
-                          label: 'Vrátit zpět',
-                          onPressed: () async {
-                            try {
-                              await ref.read(createDeckNotifierProvider.notifier).createDeck(
-                                deletedDeck.name,
-                                deletedDeck.description,
-                              );
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Chyba při obnovení balíčku: $e'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                        ),
-                      ),
-                    );
-                  }
-                } catch (_) {} // Ignorujeme chybu při mazání
-              },
-              child: Card(
-                clipBehavior: Clip.hardEdge,
-                child: InkWell(
-                  onTap: () {
-                    context.pushNamed(
-                      'deck_detail',
-                      pathParameters: {'id': deck.id},
-                      extra: deck,
-                    );
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              deck.name,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                            if (deck.description?.isNotEmpty ?? false) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                deck.description!,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.calendar_today, size: 16),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Vytvořeno ${_formatDate(deck.createdAt)}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit),
-                                  onPressed: () async {
-                                    await showDialog(
-                                      context: context,
-                                      builder: (context) => EditDeckDialog(
-                                        deck: deck,
-                                        onUpdate: (_) {
-                                          // Invalidujeme provider pro seznam balíčků
-                                          ref.invalidate(deckListProvider);
-                                        },
-                                      ),
-                                    );
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.play_arrow),
-                                  onPressed: () {
-                                    context.pushNamed(
-                                      'study',
-                                      pathParameters: {'deckId': deck.id},
-                                      extra: deck,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
+            return DeckCard(key: ValueKey(deck.id), deck: deck);
           },
         );
       },
+    );
+  }
+}
+
+class DeckCard extends StatelessWidget {
+  final DeckEntity deck;
+  
+  const DeckCard({super.key, required this.deck});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: () {
+          context.pushNamed(
+            'deck_detail',
+            pathParameters: {'id': deck.id},
+            extra: deck,
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    deck.name,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  if (deck.description?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      deck.description!,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Vytvořeno ${_formatDate(deck.createdAt)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => _showEditDialog(context),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.play_arrow),
+                        onPressed: () => _startStudy(context),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => EditDeckDialog(
+        deck: deck,
+        onUpdate: (_) {},
+      ),
+    );
+  }
+
+  void _startStudy(BuildContext context) {
+    context.pushNamed(
+      'study',
+      pathParameters: {'deckId': deck.id},
+      extra: deck,
     );
   }
 

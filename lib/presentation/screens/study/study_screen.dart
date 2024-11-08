@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../domain/entities/deck_entity.dart';
 import '../../../domain/entities/card_entity.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import '../../../domain/enums/difficulty_level.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import '../../providers/study_progress_provider.dart';
-import '../../providers/card_list_provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../providers/study_statistics_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class StudyScreen extends HookConsumerWidget {
   final DeckEntity deck;
@@ -23,7 +22,6 @@ class StudyScreen extends HookConsumerWidget {
     final isCardFlipped = useState(false);
     final currentCardIndex = useState(0);
     final isPracticeMode = useState(false);
-    final studyStartTime = useState(DateTime.now());
     final cardStartTime = useState(DateTime.now());
     final sessionStats = useState({
       'totalTime': 0,
@@ -32,141 +30,97 @@ class StudyScreen extends HookConsumerWidget {
       'hardCount': 0,
     });
 
-    int getCardStudyTime() {
-      return DateTime.now().difference(cardStartTime.value).inSeconds;
-    }
+    return dueCardsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Chyba: $error')),
+      data: (cards) {
+        if (cards.isEmpty && !isPracticeMode.value) {
+          return _buildEmptyState(context);
+        }
 
-    void updateSessionStats(DifficultyLevel difficulty, int studyTime) {
-      sessionStats.value = {
-        'totalTime': sessionStats.value['totalTime']! + studyTime,
-        'easyCount': sessionStats.value['easyCount']! + (difficulty == DifficultyLevel.easy ? 1 : 0),
-        'mediumCount': sessionStats.value['mediumCount']! + (difficulty == DifficultyLevel.medium ? 1 : 0),
-        'hardCount': sessionStats.value['hardCount']! + (difficulty == DifficultyLevel.hard ? 1 : 0),
-      };
-    }
+        final displayCards = cards;
+        if (currentCardIndex.value >= displayCards.length) return _buildEmptyState(context);
+        final currentCard = displayCards[currentCardIndex.value];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(deck.name),
-        centerTitle: true,
-      ),
-      body: dueCardsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Chyba: $error')),
-        data: (cards) {
-          if (cards.isEmpty && !isPracticeMode.value) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.check_circle_outline,
-                    size: 64,
-                    color: Colors.green,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Všechny kartičky jsou naučené!',
-                    style: Theme.of(context).textTheme.titleLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Další kartičky budou k dispozici později',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () => context.go('/deck/${deck.id}'),
-                        icon: const Icon(Icons.arrow_back),
-                        label: const Text('Zpět na balíček'),
-                      ),
-                      const SizedBox(width: 16),
-                      FilledButton.icon(
-                        onPressed: () {
-                          isPracticeMode.value = true;
-                        },
-                        icon: const Icon(Icons.fitness_center),
-                        label: const Text('Practice Mode'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
+        // Funkce pro přechod na další kartičku
+        void moveToNextCard() {
+          if (currentCardIndex.value + 1 >= displayCards.length) {
+            _showSummaryDialog(context, sessionStats.value);
+          } else {
+            currentCardIndex.value++;
+            isCardFlipped.value = false;
+            cardStartTime.value = DateTime.now();
+          }
+        }
+
+        // Funkce pro hodnocení kartičky
+        Future<void> rateCard(DifficultyLevel difficulty) async {
+          if (isPracticeMode.value) {
+            moveToNextCard();
+            return;
           }
 
-          final allCards = ref.watch(practiceCardsProvider(deck.id));
-          final displayCards = isPracticeMode.value 
-              ? allCards.value ?? []
-              : cards;
+          final studyTime = DateTime.now().difference(cardStartTime.value).inSeconds;
+          
+          // Aktualizovat statistiky session
+          sessionStats.value = {
+            'totalTime': sessionStats.value['totalTime']! + studyTime,
+            'easyCount': sessionStats.value['easyCount']! + (difficulty == DifficultyLevel.easy ? 1 : 0),
+            'mediumCount': sessionStats.value['mediumCount']! + (difficulty == DifficultyLevel.medium ? 1 : 0),
+            'hardCount': sessionStats.value['hardCount']! + (difficulty == DifficultyLevel.hard ? 1 : 0),
+          };
 
-          if (currentCardIndex.value >= displayCards.length) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isPracticeMode.value ? Icons.fitness_center : Icons.celebration,
-                    size: 64,
-                    color: isPracticeMode.value ? Colors.blue : Colors.amber,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    isPracticeMode.value 
-                        ? 'Dokončili jste procvičování!'
-                        : 'Dokončili jste studium!',
-                    style: Theme.of(context).textTheme.titleLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    isPracticeMode.value
-                        ? 'Chcete procvičovat znovu?'
-                        : 'Další kartičky budou k dispozici podle vašeho hodnocení',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () => context.go('/deck/${deck.id}'),
-                        icon: const Icon(Icons.arrow_back),
-                        label: const Text('Zpět na balíček'),
-                      ),
-                      const SizedBox(width: 16),
-                      FilledButton.icon(
-                        onPressed: () {
-                          currentCardIndex.value = 0;
-                          isCardFlipped.value = false;
-                        },
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Začít znovu'),
-                      ),
-                    ],
-                  ),
-                ],
+          // Okamžitě přejít na další kartičku
+          moveToNextCard();
+
+          // Asynchronně uložit data
+          try {
+            await Future.wait([
+              ref.read(studyProgressProvider.notifier).updateProgress(
+                cardId: currentCard.id,
+                difficulty: difficulty,
+                studyTimeSeconds: studyTime,
               ),
-            );
+              ref.read(studyStatisticsNotifierProvider.notifier).updateStatistics(
+                deckId: deck.id,
+                difficulty: difficulty,
+                studyTimeSeconds: studyTime,
+              ),
+            ]);
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Chyba při ukládání: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
           }
+        }
 
-          final currentCard = displayCards[currentCardIndex.value];
-          final progress = (currentCardIndex.value + 1) / displayCards.length;
-
-          return Column(
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(deck.name),
+            centerTitle: true,
+            actions: [
+              // Progress indikátor
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Center(
+                  child: Text(
+                    '${currentCardIndex.value + 1}/${displayCards.length}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          body: Column(
             children: [
+              // Progress bar
               LinearProgressIndicator(
-                value: progress,
+                value: (currentCardIndex.value + 1) / displayCards.length,
                 backgroundColor: Colors.grey[200],
                 valueColor: AlwaysStoppedAnimation<Color>(
                   Theme.of(context).colorScheme.primary,
@@ -174,132 +128,95 @@ class StudyScreen extends HookConsumerWidget {
               ),
               Expanded(
                 child: GestureDetector(
-                  onTap: () {
-                    isCardFlipped.value = !isCardFlipped.value;
-                  },
+                  onTap: () => isCardFlipped.value = !isCardFlipped.value,
                   child: _FlashCard(
                     card: currentCard,
                     isFlipped: isCardFlipped.value,
                   ),
                 ),
               ),
-              Padding(
+              if (isCardFlipped.value) Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Text(
-                      'Kartička ${currentCardIndex.value + 1} z ${displayCards.length}',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    ElevatedButton(
+                      onPressed: () => rateCard(DifficultyLevel.easy),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
+                      child: const Text('Snadné'),
                     ),
-                    const SizedBox(height: 16),
-                    if (!isCardFlipped.value) ...[
-                      FilledButton(
-                        onPressed: () {
-                          isCardFlipped.value = true;
-                        },
-                        child: const Text('Ukázat odpověď'),
+                    ElevatedButton(
+                      onPressed: () => rateCard(DifficultyLevel.medium),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
                       ),
-                    ] else ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: DifficultyLevel.values.map((difficulty) {
-                          return ElevatedButton(
-                            onPressed: () async {
-                              try {
-                                if (!isPracticeMode.value) {
-                                  final studyTime = getCardStudyTime();
-                                  
-                                  await ref.read(studyStatisticsNotifierProvider.notifier).updateStatistics(
-                                    deckId: deck.id,
-                                    difficulty: difficulty,
-                                    studyTimeSeconds: studyTime,
-                                  );
-
-                                  await ref.read(studyProgressProvider.notifier).updateProgress(
-                                    cardId: currentCard.id,
-                                    difficulty: difficulty,
-                                    studyTimeSeconds: studyTime,
-                                  );
-
-                                  updateSessionStats(difficulty, studyTime);
-                                }
-                                
-                                await Future.delayed(const Duration(milliseconds: 300));
-                                
-                                if (context.mounted) {
-                                  if (currentCardIndex.value + 1 >= displayCards.length) {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: const Text('Souhrn studia'),
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text('Celkový čas: ${_formatTime(sessionStats.value['totalTime']!)}'),
-                                            const SizedBox(height: 8),
-                                            Text('Snadné: ${sessionStats.value['easyCount']}'),
-                                            Text('Střední: ${sessionStats.value['mediumCount']}'),
-                                            Text('Těžké: ${sessionStats.value['hardCount']}'),
-                                          ],
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                              context.go('/deck/${deck.id}');
-                                            },
-                                            child: const Text('Zpět na balíček'),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                              currentCardIndex.value = 0;
-                                              isCardFlipped.value = false;
-                                              sessionStats.value = {
-                                                'totalTime': 0,
-                                                'easyCount': 0,
-                                                'mediumCount': 0,
-                                                'hardCount': 0,
-                                              };
-                                            },
-                                            child: const Text('Začít znovu'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  } else {
-                                    currentCardIndex.value++;
-                                    isCardFlipped.value = false;
-                                    cardStartTime.value = DateTime.now();
-                                  }
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Chyba při ukládání: $e'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: difficulty.color.withOpacity(0.1),
-                              foregroundColor: difficulty.color,
-                            ),
-                            child: Text(difficulty.label),
-                          );
-                        }).toList(),
+                      child: const Text('Střední'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => rateCard(DifficultyLevel.hard),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
                       ),
-                    ],
+                      child: const Text('Těžké'),
+                    ),
                   ],
                 ),
               ),
             ],
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.check_circle_outline,
+            size: 64,
+            color: Colors.green,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Všechny kartičky jsou naučené!',
+            style: Theme.of(context).textTheme.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSummaryDialog(BuildContext context, Map<String, int> stats) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Souhrn studia'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Celkový čas: ${_formatTime(stats['totalTime']!)}'),
+            const SizedBox(height: 8),
+            Text('Snadné: ${stats['easyCount']}'),
+            Text('Střední: ${stats['mediumCount']}'),
+            Text('Těžké: ${stats['hardCount']}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.go('/deck/${deck.id}');
+            },
+            child: const Text('Zpět na balíček'),
+          ),
+        ],
       ),
     );
   }
@@ -344,23 +261,14 @@ class _FlashCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
-              if (isFlipped) ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Klepněte pro zobrazení přední strany',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
-                  ),
+              const SizedBox(height: 16),
+              Text(
+                isFlipped ? 'Klepněte pro zobrazení přední strany'
+                         : 'Klepněte pro zobrazení odpovědi',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey,
                 ),
-              ] else ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Klepněte pro zobrazení odpovědi',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         ),
