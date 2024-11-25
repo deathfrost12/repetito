@@ -119,3 +119,5 @@ Daniel Holeš
 ## 10. Licence
 
 MIT
+
+[Vyzkoušet aplikaci](https://danielholes.github.io/repetito/)
