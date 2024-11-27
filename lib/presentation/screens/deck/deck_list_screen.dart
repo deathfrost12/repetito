@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../domain/entities/deck_entity.dart';
 import '../../providers/deck_list_provider.dart';
 import 'edit_deck_dialog.dart';
@@ -11,38 +10,42 @@ class DeckListScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Moje balíčky'),
-        centerTitle: true,
-        actions: [
-          // Tlačítko pro odhlášení
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              await Supabase.instance.client.auth.signOut();
-              if (context.mounted) {
-                navigator.pop(); // Zavře případné dialogy
-              }
-            },
+        backgroundColor: Colors.transparent,
+        title: Text(
+          'My Decks',
+          style: TextStyle(
+            color: theme.colorScheme.onBackground,
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
           ),
-        ],
+        ),
+        elevation: 0,
       ),
-      // Tělo s prázdným stavem nebo seznamem balíčků
       body: const _DeckListContent(),
-      // Tlačítko pro přidání nového balíčku
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          _showCreateDeckDialog(context);
-        },
-        label: const Text('Nový balíček'),
-        icon: const Icon(Icons.add),
+        onPressed: () => _showCreateDeckDialog(context),
+        backgroundColor: theme.colorScheme.primary,
+        label: Text(
+          'New Deck',
+          style: TextStyle(
+            color: theme.colorScheme.onPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        icon: Icon(
+          Icons.add,
+          color: theme.colorScheme.onPrimary,
+        ),
       ),
     );
   }
 
   Future<void> _showCreateDeckDialog(BuildContext context) async {
+    final theme = Theme.of(context);
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -50,7 +53,11 @@ class DeckListScreen extends HookConsumerWidget {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Nový balíček'),
+        backgroundColor: theme.cardColor,
+        title: Text(
+          'New Deck',
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
         content: Form(
           key: formKey,
           child: Column(
@@ -58,13 +65,22 @@ class DeckListScreen extends HookConsumerWidget {
             children: [
               TextFormField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Název balíčku',
-                  hintText: 'Např. Anglická slovíčka',
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Deck Name',
+                  hintText: 'e.g. English Vocabulary',
+                  labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.primary),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Prosím zadejte název balíčku';
+                    return 'Please enter deck name';
                   }
                   return null;
                 },
@@ -73,9 +89,18 @@ class DeckListScreen extends HookConsumerWidget {
               const SizedBox(height: 16),
               TextFormField(
                 controller: descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Popis (volitelné)',
-                  hintText: 'Např. Základní fráze a slovíčka',
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Description (optional)',
+                  hintText: 'e.g. Basic phrases and words',
+                  labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.primary),
+                  ),
                 ),
                 maxLines: 2,
               ),
@@ -85,7 +110,10 @@ class DeckListScreen extends HookConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Zrušit'),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+            child: const Text('Cancel'),
           ),
           Consumer(
             builder: (context, ref, child) {
@@ -107,8 +135,9 @@ class DeckListScreen extends HookConsumerWidget {
                           if (context.mounted) {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Balíček byl vytvořen'),
+                              SnackBar(
+                                content: const Text('Deck created successfully'),
+                                backgroundColor: theme.colorScheme.primary,
                               ),
                             );
                           }
@@ -116,22 +145,30 @@ class DeckListScreen extends HookConsumerWidget {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Chyba: $e'),
+                                content: Text('Error: $e'),
                                 backgroundColor: Colors.red,
                               ),
                             );
                           }
                         }
                       },
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                ),
                 child: notifier.isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
+                          color: theme.colorScheme.onPrimary,
                         ),
                       )
-                    : const Text('Vytvořit'),
+                    : const Text(
+                        'Create',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
               );
             },
           ),
@@ -146,11 +183,21 @@ class _DeckListContent extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final decksAsync = ref.watch(deckListProvider.select((value) => value));
+    final decksAsync = ref.watch(deckListProvider);
+    final theme = Theme.of(context);
     
     return decksAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Chyba: $error')),
+      loading: () => Center(
+        child: CircularProgressIndicator(
+          color: theme.colorScheme.primary,
+        ),
+      ),
+      error: (error, stack) => Center(
+        child: Text(
+          'Error: $error',
+          style: const TextStyle(color: Colors.red),
+        ),
+      ),
       data: (decks) {
         if (decks.isEmpty) {
           return const _EmptyState();
@@ -162,10 +209,59 @@ class _DeckListContent extends HookConsumerWidget {
           padding: const EdgeInsets.all(16),
           itemBuilder: (context, index) {
             final deck = decks[index];
-            return DeckCard(key: ValueKey(deck.id), deck: deck);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: DeckCard(key: ValueKey(deck.id), deck: deck),
+            );
           },
         );
       },
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.library_books,
+              size: 40,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No Decks Yet',
+            style: TextStyle(
+              color: theme.colorScheme.onBackground,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Create your first deck to start learning',
+            style: TextStyle(
+              color: theme.colorScheme.onBackground.withOpacity(0.7),
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -177,8 +273,14 @@ class DeckCard extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
+      color: theme.cardColor,
+      elevation: 0,
       clipBehavior: Clip.hardEdge,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: InkWell(
         onTap: () {
           context.pushNamed(
@@ -187,65 +289,97 @@ class DeckCard extends StatelessWidget {
             extra: deck,
           );
         },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Text(
-                    deck.name,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.style,
+                      color: theme.colorScheme.primary,
+                      size: 20,
                     ),
                   ),
-                  if (deck.description?.isNotEmpty ?? false) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      deck.description!,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
-                      ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          deck.name,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (deck.description?.isNotEmpty ?? false) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            deck.description!,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
+                  ),
                 ],
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+              const SizedBox(height: 16),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 16),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        'Vytvořeno ${_formatDate(deck.createdAt)}',
-                        style: Theme.of(context).textTheme.bodySmall,
+                        'Created ${_formatDate(deck.createdAt)}',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit),
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
                         onPressed: () => _showEditDialog(context),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.play_arrow),
+                        icon: Icon(
+                          Icons.play_arrow_rounded,
+                          color: theme.colorScheme.primary,
+                        ),
                         onPressed: () => _startStudy(context),
                       ),
                     ],
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -256,7 +390,6 @@ class DeckCard extends StatelessWidget {
       context: context,
       builder: (context) => EditDeckDialog(
         deck: deck,
-        onUpdate: (_) {},
       ),
     );
   }
@@ -264,49 +397,12 @@ class DeckCard extends StatelessWidget {
   void _startStudy(BuildContext context) {
     context.pushNamed(
       'study',
-      pathParameters: {'deckId': deck.id},
+      pathParameters: {'id': deck.id},
       extra: deck,
     );
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}. ${date.month}. ${date.year}';
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.library_books_outlined,
-            size: 64,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Zatím nemáte žádné balíčky',
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'Začněte vytvořením nového balíčku pomocí tlačítka níže',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
+    return '${date.day}/${date.month}/${date.year}';
   }
 } 

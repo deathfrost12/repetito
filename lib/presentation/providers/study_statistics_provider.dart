@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/entities/study_statistics_entity.dart';
-import '../../data/repositories/study_statistics_repository.dart';
 import '../../domain/enums/difficulty_level.dart';
+import '../../data/repositories/study_statistics_repository.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 
 part 'study_statistics_provider.g.dart';

@@ -1,199 +1,105 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:repetito/core/router/router.dart';
+import 'package:repetito/presentation/providers/theme_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../providers/study_statistics_provider.dart';
-import '../../providers/deck_list_provider.dart';
 
 class ProfileScreen extends HookConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeNotifierProvider);
     final user = Supabase.instance.client.auth.currentUser;
-    final statisticsAsync = ref.watch(userStatisticsProvider);
-    final decksAsync = ref.watch(deckListProvider);
+
+    String getThemeModeText(ThemeMode? mode) {
+      switch (mode) {
+        case ThemeMode.light:
+          return 'Světlý režim';
+        case ThemeMode.dark:
+          return 'Tmavý režim';
+        case ThemeMode.system:
+          return 'Systémový režim';
+        default:
+          return 'Systémový režim';
+      }
+    }
+
+    IconData getThemeModeIcon(ThemeMode? mode) {
+      switch (mode) {
+        case ThemeMode.light:
+          return Icons.light_mode;
+        case ThemeMode.dark:
+          return Icons.dark_mode;
+        case ThemeMode.system:
+          return Icons.settings_brightness;
+        default:
+          return Icons.settings_brightness;
+      }
+    }
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar.large(
-            title: const Text('Profil'),
-            centerTitle: true,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () async {
-                  final shouldLogout = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Odhlásit se?'),
-                      content: const Text('Opravdu se chcete odhlásit?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('Zrušit'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Odhlásit'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (shouldLogout == true) {
-                    await Supabase.instance.client.auth.signOut();
-                  }
-                },
+      appBar: AppBar(
+        title: const Text('Profil'),
+      ),
+      body: ListView(
+        children: [
+          const SizedBox(height: 24),
+          if (user?.userMetadata?['avatar_url'] != null)
+            Center(
+              child: CircleAvatar(
+                radius: 50,
+                backgroundImage: NetworkImage(
+                  user!.userMetadata!['avatar_url'] as String,
+                ),
               ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            ),
+          const SizedBox(height: 16),
+          if (user?.userMetadata?['full_name'] != null)
+            Center(
+              child: Text(
+                user!.userMetadata!['full_name'] as String,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+          if (user?.email != null)
+            Center(
+              child: Text(
+                user!.email!,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Profil uživatele
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundImage: user?.userMetadata?['avatar_url'] != null
-                                ? NetworkImage(user!.userMetadata!['avatar_url'] as String)
-                                : null,
-                            child: user?.userMetadata?['avatar_url'] == null
-                                ? const Icon(Icons.person, size: 30)
-                                : null,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user?.userMetadata?['full_name'] as String? ?? 'Uživatel',
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                Text(
-                                  user?.email ?? '',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                  ListTile(
+                    leading: Icon(
+                      getThemeModeIcon(themeMode.value),
                     ),
+                    title: const Text('Vzhled aplikace'),
+                    subtitle: Text(getThemeModeText(themeMode.value)),
+                    onTap: () {
+                      ref.read(themeNotifierProvider.notifier).toggleTheme();
+                    },
                   ),
-                  const SizedBox(height: 16),
-
-                  // Celkové statistiky
-                  statisticsAsync.when(
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, stack) => Center(child: Text('Chyba: $error')),
-                    data: (statistics) {
-                      int totalCardsStudied = 0;
-                      int totalStudyTime = 0;
-                      int totalEasy = 0;
-                      int totalMedium = 0;
-                      int totalHard = 0;
-
-                      for (var stat in statistics.values) {
-                        totalCardsStudied += stat.totalCardsStudied;
-                        totalStudyTime += stat.totalStudyTimeSeconds;
-                        totalEasy += stat.easyCount;
-                        totalMedium += stat.mediumCount;
-                        totalHard += stat.hardCount;
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.logout),
+                    title: const Text('Odhlásit se'),
+                    onTap: () async {
+                      await Supabase.instance.client.auth.signOut();
+                      if (context.mounted) {
+                        context.go('/login');
                       }
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Celkové statistiky',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 8),
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  _StatRow(
-                                    icon: Icons.timer,
-                                    label: 'Celkový čas studia',
-                                    value: _formatStudyTime(totalStudyTime),
-                                  ),
-                                  const Divider(),
-                                  _StatRow(
-                                    icon: Icons.school,
-                                    label: 'Naučené kartičky',
-                                    value: '$totalCardsStudied',
-                                  ),
-                                  const Divider(),
-                                  _StatRow(
-                                    icon: Icons.library_books,
-                                    label: 'Počet balíčků',
-                                    value: '${statistics.length}',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
                     },
                   ),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatStudyTime(int seconds) {
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    if (hours > 0) {
-      return '$hours h $minutes min';
-    }
-    return '$minutes min';
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _StatRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(label),
-          ),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),

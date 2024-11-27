@@ -1,60 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:repetito/core/router/router.dart';
+import 'package:repetito/core/theme/app_theme.dart';
+import 'package:repetito/presentation/providers/theme_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:logging/logging.dart';
-import 'core/constants/app_constants.dart';
-import 'core/router/router.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  Logger.root.level = Level.ALL;
-  Logger.root.onRecord.listen((record) {
-    debugPrint('${record.level.name}: ${record.time}: ${record.message}');
-  });
 
-  try {
-    await Supabase.initialize(
-      url: AppConstants.supabaseUrl,
-      anonKey: AppConstants.supabaseAnonKey,
-      debug: true,
-      authOptions: FlutterAuthClientOptions(
-        authFlowType: AuthFlowType.implicit,
-        autoRefreshToken: true,
-      ),
-    );
-    
-    runApp(const ProviderScope(child: RepetitoApp()));
-  } catch (e, stack) {
-    debugPrint('Error initializing app: $e\n$stack');
-  }
+  await Supabase.initialize(
+    url: 'https://hadbnhklzdxzcbamyula.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZGJuaGtsemR4emNiYW15dWxhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA2Mzg3MTQsImV4cCI6MjA0NjIxNDcxNH0.aGDYKdLg_JpMZ2p7b_4iJ3aK4UaCNOZSc7lCrBd6cPY',
+  );
+
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-class RepetitoApp extends HookConsumerWidget {
-  const RepetitoApp({super.key});
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-
-    useEffect(() {
-      final subscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-        debugPrint('Auth state changed: ${data.event}');
-        if (data.event == AuthChangeEvent.signedIn) {
-          debugPrint('User signed in: ${data.session?.user.email}');
-        }
-      });
-
-      return subscription.cancel;
-    }, const []);
+    final themeMode = ref.watch(themeNotifierProvider);
 
     return MaterialApp.router(
       title: 'Repetito',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode.value ?? ThemeMode.system,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

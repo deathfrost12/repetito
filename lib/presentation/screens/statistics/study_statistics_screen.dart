@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../domain/entities/deck_entity.dart';
-import '../../providers/study_statistics_provider.dart';
 import '../../widgets/statistics/study_progress_chart.dart';
+import '../../providers/study_statistics_provider.dart';
 
 class StudyStatisticsScreen extends HookConsumerWidget {
   final DeckEntity deck;

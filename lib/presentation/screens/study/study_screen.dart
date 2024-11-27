@@ -3,9 +3,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../domain/entities/deck_entity.dart';
 import '../../../domain/entities/card_entity.dart';
 import '../../../domain/enums/difficulty_level.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import '../../providers/study_progress_provider.dart';
 import '../../providers/study_statistics_provider.dart';
+import '../../providers/card_list_provider.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 
 class StudyScreen extends HookConsumerWidget {
