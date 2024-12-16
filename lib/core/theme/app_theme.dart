@@ -13,14 +13,13 @@ class AppTheme {
       primary: _primaryColor,
       secondary: _secondaryColor,
       tertiary: _tertiaryColor,
-      background: Colors.white,
       surface: Colors.white,
       onSurface: Colors.black87,
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: Colors.white,
       indicatorColor: _primaryColor.withOpacity(0.1),
-      labelTextStyle: MaterialStateProperty.all(
+      labelTextStyle: WidgetStateProperty.all(
         const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
       ),
     ),
@@ -71,14 +70,13 @@ class AppTheme {
       primary: _primaryColor,
       secondary: _secondaryColor,
       tertiary: _tertiaryColor,
-      background: const Color(0xFF1A1A1A),
       surface: const Color(0xFF2A2A2A),
       onSurface: Colors.white,
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: const Color(0xFF1A1A1A),
       indicatorColor: _primaryColor.withOpacity(0.2),
-      labelTextStyle: MaterialStateProperty.all(
+      labelTextStyle: WidgetStateProperty.all(
         const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
       ),
     ),

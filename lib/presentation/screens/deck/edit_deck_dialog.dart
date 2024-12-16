@@ -16,12 +16,25 @@ class EditDeckDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final nameController = TextEditingController(text: deck.name);
     final descriptionController = TextEditingController(text: deck.description);
     final formKey = GlobalKey<FormState>();
 
     return AlertDialog(
-      title: const Text('Upravit balíček'),
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: colorScheme.surfaceTint,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+      title: Text(
+        'Upravit balíček',
+        style: theme.textTheme.headlineSmall?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
       content: Form(
         key: formKey,
         child: Column(
@@ -29,9 +42,44 @@ class EditDeckDialog extends ConsumerWidget {
           children: [
             TextFormField(
               controller: nameController,
-              decoration: const InputDecoration(
+              style: TextStyle(color: colorScheme.onSurface),
+              decoration: InputDecoration(
                 labelText: 'Název balíčku',
                 hintText: 'Např. Anglická slovíčka',
+                labelStyle: TextStyle(color: colorScheme.primary),
+                hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.outline.withOpacity(0.3),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.error,
+                  ),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.error,
+                    width: 2,
+                  ),
+                ),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -44,9 +92,44 @@ class EditDeckDialog extends ConsumerWidget {
             const SizedBox(height: 16),
             TextFormField(
               controller: descriptionController,
-              decoration: const InputDecoration(
+              style: TextStyle(color: colorScheme.onSurface),
+              decoration: InputDecoration(
                 labelText: 'Popis (volitelné)',
                 hintText: 'Např. Základní fráze a slovíčka',
+                labelStyle: TextStyle(color: colorScheme.primary),
+                hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.outline.withOpacity(0.3),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.error,
+                  ),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.error,
+                    width: 2,
+                  ),
+                ),
               ),
               maxLines: 2,
             ),
@@ -56,6 +139,10 @@ class EditDeckDialog extends ConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
+          style: TextButton.styleFrom(
+            foregroundColor: colorScheme.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
           child: const Text('Zrušit'),
         ),
         Consumer(
@@ -83,8 +170,12 @@ class EditDeckDialog extends ConsumerWidget {
                           onUpdate?.call(updatedDeck);
                           
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Balíček byl upraven'),
+                            SnackBar(
+                              content: Text(
+                                'Balíček byl upraven',
+                                style: TextStyle(color: colorScheme.onPrimary),
+                              ),
+                              backgroundColor: colorScheme.primary,
                             ),
                           );
                         }
@@ -92,19 +183,31 @@ class EditDeckDialog extends ConsumerWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Chyba: $e'),
-                              backgroundColor: Colors.red,
+                              content: Text(
+                                'Chyba: $e',
+                                style: TextStyle(color: colorScheme.onError),
+                              ),
+                              backgroundColor: colorScheme.error,
                             ),
                           );
                         }
                       }
                     },
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: notifier.isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
+                        color: colorScheme.onPrimary,
                       ),
                     )
                   : const Text('Uložit'),

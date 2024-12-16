@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../domain/entities/study_statistics_entity.dart';
 import '../../providers/study_statistics_provider.dart';
 import '../../providers/deck_list_provider.dart';
 

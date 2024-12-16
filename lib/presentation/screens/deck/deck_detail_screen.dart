@@ -18,9 +18,16 @@ class DeckDetailScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
         leading: BackButton(
+          color: colorScheme.onSurface,
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -29,11 +36,16 @@ class DeckDetailScreen extends HookConsumerWidget {
             }
           },
         ),
-        title: Text(deck.name),
+        title: Text(
+          deck.name,
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: colorScheme.onSurface,
+          ),
+        ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: Icon(Icons.edit, color: colorScheme.onSurface),
             onPressed: () async {
               await showDialog(
                 context: context,
@@ -57,34 +69,57 @@ class DeckDetailScreen extends HookConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            color: Theme.of(context).colorScheme.primaryContainer,
+            margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.shadow.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (deck.description?.isNotEmpty ?? false) ...[
                   Text(
                     deck.description!,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                 ],
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today, size: 16),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Text(
                       'Vytvořeno ${_formatDate(deck.createdAt)}',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -98,51 +133,103 @@ class DeckDetailScreen extends HookConsumerWidget {
                         extra: deck,
                       );
                     },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Začít studium'),
                   ),
                 ),
-                const SizedBox(width: 16),
-                IconButton.filledTonal(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => StudyStatisticsScreen(deck: deck),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.bar_chart),
-                  tooltip: 'Statistiky',
+                const SizedBox(width: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => StudyStatisticsScreen(deck: deck),
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.bar_chart,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                    tooltip: 'Statistiky',
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Text(
               'Kartičky',
-              style: TextStyle(
-                fontSize: 20,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          const SizedBox(height: 8),
           Expanded(
             child: Consumer(
               builder: (context, ref, child) {
                 final cardsAsync = ref.watch(cardListProvider(deck.id));
                 
                 return cardsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => Center(
+                    child: CircularProgressIndicator(
+                      color: colorScheme.primary,
+                    ),
+                  ),
                   error: (error, stack) => Center(
-                    child: Text('Chyba: $error'),
+                    child: Text(
+                      'Chyba: $error',
+                      style: TextStyle(color: colorScheme.error),
+                    ),
                   ),
                   data: (cards) {
                     if (cards.isEmpty) {
-                      return const Center(
-                        child: Text('Zatím nemáte žádné kartičky'),
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primaryContainer,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.note_add,
+                                size: 32,
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Zatím nemáte žádné kartičky',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Klikněte na + pro přidání nové kartičky',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     }
 
@@ -151,27 +238,70 @@ class DeckDetailScreen extends HookConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemBuilder: (context, index) {
                         final card = cards[index];
-                        return Card(
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.shadow.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
                           child: ListTile(
-                            title: Text(card.frontContent),
-                            subtitle: Text(card.backContent),
+                            contentPadding: const EdgeInsets.all(16),
+                            title: Text(
+                              card.frontContent,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                card.backContent,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
+                            ),
                             trailing: IconButton(
-                              icon: const Icon(Icons.delete),
+                              icon: Icon(
+                                Icons.delete,
+                                color: colorScheme.error,
+                              ),
                               onPressed: () async {
                                 final shouldDelete = await showDialog<bool>(
                                   context: context,
                                   builder: (context) => AlertDialog(
-                                    title: const Text('Smazat kartičku?'),
-                                    content: const Text('Opravdu chcete smazat tuto kartičku?'),
+                                    backgroundColor: colorScheme.surface,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    title: Text(
+                                      'Smazat kartičku?',
+                                      style: TextStyle(color: colorScheme.onSurface),
+                                    ),
+                                    content: Text(
+                                      'Opravdu chcete smazat tuto kartičku?',
+                                      style: TextStyle(color: colorScheme.onSurface),
+                                    ),
                                     actions: [
                                       TextButton(
                                         onPressed: () => Navigator.of(context).pop(false),
-                                        child: const Text('Zrušit'),
+                                        child: Text(
+                                          'Zrušit',
+                                          style: TextStyle(color: colorScheme.primary),
+                                        ),
                                       ),
                                       FilledButton(
                                         onPressed: () => Navigator.of(context).pop(true),
                                         style: FilledButton.styleFrom(
-                                          backgroundColor: Colors.red,
+                                          backgroundColor: colorScheme.error,
+                                          foregroundColor: colorScheme.onError,
                                         ),
                                         child: const Text('Smazat'),
                                       ),
@@ -188,9 +318,14 @@ class DeckDetailScreen extends HookConsumerWidget {
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: const Text('Kartička byla smazána'),
+                                          content: Text(
+                                            'Kartička byla smazána',
+                                            style: TextStyle(color: colorScheme.onPrimary),
+                                          ),
+                                          backgroundColor: colorScheme.primary,
                                           action: SnackBarAction(
                                             label: 'Vrátit zpět',
+                                            textColor: colorScheme.onPrimary,
                                             onPressed: () async {
                                               try {
                                                 await ref.read(createCardNotifierProvider.notifier).createCard(
@@ -202,8 +337,11 @@ class DeckDetailScreen extends HookConsumerWidget {
                                                 if (context.mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
                                                     SnackBar(
-                                                      content: Text('Chyba při obnovení kartičky: $e'),
-                                                      backgroundColor: Colors.red,
+                                                      content: Text(
+                                                        'Chyba při obnovení kartičky: $e',
+                                                        style: TextStyle(color: colorScheme.onError),
+                                                      ),
+                                                      backgroundColor: colorScheme.error,
                                                     ),
                                                   );
                                                 }
@@ -235,6 +373,8 @@ class DeckDetailScreen extends HookConsumerWidget {
             builder: (context) => AddCardDialog(deck: deck),
           );
         },
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         child: const Icon(Icons.add),
       ),
     );
