@@ -421,7 +421,7 @@ class DeckCard extends StatelessWidget {
   void _startStudy(BuildContext context) {
     context.pushNamed(
       'study',
-      pathParameters: {'id': deck.id},
+      pathParameters: {'deckId': deck.id},
       extra: deck,
     );
   }

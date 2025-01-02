@@ -188,6 +188,7 @@ class FolderDetailScreen extends HookConsumerWidget {
                             folderId: folder.id,
                             deckId: deck.id,
                           );
+                          ref.invalidate(folderDeckIdsProvider(folder.id));
                           if (context.mounted) {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
