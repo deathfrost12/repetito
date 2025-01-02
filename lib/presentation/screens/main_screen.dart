@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'deck/deck_list_screen.dart';
+import 'library/library_screen.dart';
 import 'statistics/user_statistics_screen.dart';
 import 'profile/profile_screen.dart';
 
@@ -15,6 +16,7 @@ class MainScreen extends HookConsumerWidget {
     // Seznam obrazovek pro navigaci
     final screens = [
       const DeckListScreen(),
+      const LibraryScreen(),
       const UserStatisticsScreen(),
       const ProfileScreen(),
     ];
@@ -28,9 +30,14 @@ class MainScreen extends HookConsumerWidget {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.library_books_outlined),
-            selectedIcon: Icon(Icons.library_books),
+            icon: Icon(Icons.style_outlined),
+            selectedIcon: Icon(Icons.style),
             label: 'Balíčky',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.folder_outlined),
+            selectedIcon: Icon(Icons.folder),
+            label: 'Knihovna',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),

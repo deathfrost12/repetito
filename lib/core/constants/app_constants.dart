@@ -15,6 +15,8 @@ abstract class AppConstants {
   static const String pathHome = '/';
   static const String pathLogin = '/login';
   static const String pathDecks = '/decks';
+  static const String pathLibrary = '/library';
+  static const String pathFolderDetail = '/folder/:id';
   static const String pathStudy = '/study/:deckId';
   static const String pathDeckDetail = '/deck/:id';
   static const String pathStatistics = '/statistics/:deckId';

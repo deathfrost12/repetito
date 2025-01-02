@@ -9,7 +9,10 @@ import '../../presentation/screens/main_screen.dart';
 import '../../presentation/screens/deck/deck_detail_screen.dart';
 import '../../presentation/screens/study/study_screen.dart';
 import '../../presentation/screens/statistics/study_statistics_screen.dart';
+import '../../presentation/screens/library/library_screen.dart';
+import '../../presentation/screens/library/folder_detail_screen.dart';
 import '../../../domain/entities/deck_entity.dart';
+import '../../../domain/entities/folder_entity.dart';
 
 part 'router.g.dart';
 
@@ -47,6 +50,30 @@ GoRouter router(RouterRef ref) {
         path: AppConstants.pathHome,
         name: 'home',
         builder: (context, state) => const MainScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.pathLibrary,
+        name: 'library',
+        builder: (context, state) => const LibraryScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.pathFolderDetail,
+        name: 'folder_detail',
+        builder: (context, state) {
+          final folder = state.extra as FolderEntity?;
+          final folderId = state.pathParameters['id'];
+          
+          if (folder == null && folderId != null) {
+            // TODO: Načíst složku podle ID
+            return const MainScreen();
+          }
+          
+          if (folder == null) {
+            return const MainScreen();
+          }
+          
+          return FolderDetailScreen(folder: folder);
+        },
       ),
       GoRoute(
         path: AppConstants.pathDeckDetail,
