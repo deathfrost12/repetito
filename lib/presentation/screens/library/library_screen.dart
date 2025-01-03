@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import '../../../domain/entities/folder_entity.dart';
 import '../../providers/folder_list_provider.dart';
@@ -10,21 +11,111 @@ class LibraryScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isSearching = useState(false);
+    final searchController = useTextEditingController();
+    final sortOption = useState<SortOption>(SortOption.nameAsc);
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text(
-          'Knihovna',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontSize: 28,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: isSearching.value
+          ? TextField(
+              controller: searchController,
+              autofocus: true,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontSize: 18,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Hledat složky...',
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+                border: InputBorder.none,
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    isSearching.value = false;
+                    searchController.clear();
+                  },
+                ),
+              ),
+            )
+          : Text(
+              'Knihovna',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
         elevation: 0,
+        actions: [
+          if (!isSearching.value) ...[
+            IconButton(
+              icon: Icon(
+                Icons.search,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              onPressed: () => isSearching.value = true,
+            ),
+            PopupMenuButton<SortOption>(
+              icon: Icon(
+                Icons.sort,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              onSelected: (option) => sortOption.value = option,
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: SortOption.nameAsc,
+                  child: Row(
+                    children: [
+                      Icon(Icons.sort_by_alpha),
+                      SizedBox(width: 12),
+                      Text('Název (A-Z)'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: SortOption.nameDesc,
+                  child: Row(
+                    children: [
+                      Icon(Icons.sort_by_alpha),
+                      SizedBox(width: 12),
+                      Text('Název (Z-A)'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: SortOption.dateAsc,
+                  child: Row(
+                    children: [
+                      Icon(Icons.access_time),
+                      SizedBox(width: 12),
+                      Text('Nejstarší'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: SortOption.dateDesc,
+                  child: Row(
+                    children: [
+                      Icon(Icons.access_time),
+                      SizedBox(width: 12),
+                      Text('Nejnovější'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
-      body: const _LibraryContent(),
+      body: _LibraryContent(
+        searchQuery: searchController.text,
+        sortOption: sortOption.value,
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateFolderDialog(context),
         backgroundColor: theme.colorScheme.primary,
@@ -294,8 +385,21 @@ class LibraryScreen extends HookConsumerWidget {
   }
 }
 
+enum SortOption {
+  nameAsc,
+  nameDesc,
+  dateAsc,
+  dateDesc,
+}
+
 class _LibraryContent extends HookConsumerWidget {
-  const _LibraryContent();
+  final String searchQuery;
+  final SortOption sortOption;
+
+  const _LibraryContent({
+    required this.searchQuery,
+    required this.sortOption,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -315,19 +419,84 @@ class _LibraryContent extends HookConsumerWidget {
         ),
       ),
       data: (folders) {
-        if (folders.isEmpty) {
+        // Filtrování podle vyhledávání
+        var filteredFolders = folders;
+        if (searchQuery.isNotEmpty) {
+          filteredFolders = folders.where((folder) =>
+            folder.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+            (folder.description?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false)
+          ).toList();
+        }
+
+        // Řazení
+        switch (sortOption) {
+          case SortOption.nameAsc:
+            filteredFolders.sort((a, b) => a.name.compareTo(b.name));
+          case SortOption.nameDesc:
+            filteredFolders.sort((a, b) => b.name.compareTo(a.name));
+          case SortOption.dateAsc:
+            filteredFolders.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          case SortOption.dateDesc:
+            filteredFolders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        }
+
+        if (filteredFolders.isEmpty) {
+          if (searchQuery.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.search_off,
+                    size: 64,
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Žádné složky neodpovídají\nvašemu vyhledávání',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
           return const _EmptyState();
         }
 
-        return ListView.builder(
-          cacheExtent: 100,
-          itemCount: folders.length,
+        return ReorderableListView.builder(
+          buildDefaultDragHandles: false,
+          onReorder: (oldIndex, newIndex) {
+            // TODO: Implementovat změnu pořadí složek
+          },
           padding: const EdgeInsets.all(16),
+          itemCount: filteredFolders.length,
           itemBuilder: (context, index) {
-            final folder = folders[index];
+            final folder = filteredFolders[index];
             return Padding(
+              key: ValueKey(folder.id),
               padding: const EdgeInsets.only(bottom: 12),
-              child: FolderCard(key: ValueKey(folder.id), folder: folder),
+              child: Row(
+                children: [
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Icon(
+                        Icons.drag_indicator,
+                        color: theme.colorScheme.onSurface.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: FolderCard(folder: folder),
+                  ),
+                ],
+              ),
             );
           },
         );
@@ -382,13 +551,13 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class FolderCard extends StatelessWidget {
+class FolderCard extends ConsumerWidget {
   final FolderEntity folder;
   
   const FolderCard({super.key, required this.folder});
   
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Card(
       color: theme.cardColor,
@@ -402,193 +571,342 @@ class FolderCard extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: InkWell(
-        onTap: () {
-          context.pushNamed(
-            'folder_detail',
-            pathParameters: {'id': folder.id},
-            extra: folder,
-          );
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.surface,
-                theme.colorScheme.surface.withOpacity(0.95),
-              ],
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+      child: Stack(
+        children: [
+          InkWell(
+            onTap: () {
+              context.pushNamed(
+                'folder_detail',
+                pathParameters: {'id': folder.id},
+                extra: folder,
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.surface,
+                    theme.colorScheme.surface.withOpacity(0.95),
+                  ],
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: _getColor(folder.color).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.shadow.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: _getColor(folder.color).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.shadow.withOpacity(0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Icon(
-                        _getIconData(folder.icon),
-                        color: _getColor(folder.color),
-                        size: 20,
-                      ),
+                          child: Icon(
+                            _getIconData(folder.icon),
+                            color: _getColor(folder.color),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                folder.name,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (folder.description?.isNotEmpty ?? false) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  folder.description!,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            folder.name,
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 16,
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
                             ),
-                          ),
-                          if (folder.description?.isNotEmpty ?? false) ...[
-                            const SizedBox(height: 4),
+                            const SizedBox(width: 8),
                             Text(
-                              folder.description!,
+                              'Vytvořeno ${_formatDate(folder.createdAt)}',
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface.withOpacity(0.7),
                                 fontSize: 14,
                               ),
                             ),
                           ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Vytvořeno ${_formatDate(folder.createdAt)}',
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurface.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.edit_outlined,
-                            color: theme.colorScheme.onSurface.withOpacity(0.7),
-                          ),
-                          onPressed: () => _showEditDialog(context),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.delete_outline,
-                            color: Colors.red.withOpacity(0.7),
-                          ),
-                          onPressed: () => _showDeleteDialog(context),
-                        ),
+                        const SizedBox(width: 48),
                       ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: Material(
+              type: MaterialType.transparency,
+              child: IconButton(
+                icon: Icon(
+                  Icons.edit_outlined,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+                onPressed: () => _showEditDialog(context, ref),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  void _showEditDialog(BuildContext context) {
-    // TODO: Implementovat dialog pro úpravu složky
+  String _formatDate(DateTime date) {
+    return '${date.day}. ${date.month}. ${date.year}';
   }
 
-  void _showDeleteDialog(BuildContext context) {
+  void _showEditDialog(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final nameController = TextEditingController(text: folder.name);
+    final descriptionController = TextEditingController(text: folder.description ?? '');
+    final formKey = GlobalKey<FormState>();
+    String selectedColor = folder.color;
+    String selectedIcon = folder.icon;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: theme.cardColor,
-        title: Text(
-          'Smazat složku?',
-          style: TextStyle(color: theme.colorScheme.onSurface),
-        ),
-        content: Text(
-          'Opravdu chcete smazat složku "${folder.name}"? Tato akce je nevratná.',
-          style: TextStyle(color: theme.colorScheme.onSurface),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: theme.cardColor,
+          title: Text(
+            'Upravit složku',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                    decoration: InputDecoration(
+                      labelText: 'Název složky',
+                      hintText: 'např. Jazyky',
+                      labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: theme.colorScheme.primary),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Prosím zadejte název složky';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: descriptionController,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                    decoration: InputDecoration(
+                      labelText: 'Popis (volitelné)',
+                      hintText: 'např. Složka pro jazykové kartičky',
+                      labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: theme.colorScheme.primary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Barva:',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            'blue',
+                            'red',
+                            'green',
+                            'purple',
+                            'orange',
+                          ].map((color) => InkWell(
+                            onTap: () => setState(() => selectedColor = color),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: _getColor(color),
+                                shape: BoxShape.circle,
+                                border: selectedColor == color
+                                    ? Border.all(
+                                        color: theme.colorScheme.onSurface,
+                                        width: 2,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ikona:',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            'folder',
+                            'school',
+                            'language',
+                            'science',
+                            'history',
+                          ].map((iconName) => InkWell(
+                            onTap: () => setState(() => selectedIcon = iconName),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: selectedIcon == iconName
+                                    ? theme.colorScheme.primaryContainer
+                                    : theme.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                _getIconData(iconName),
+                                color: selectedIcon == iconName
+                                    ? theme.colorScheme.onPrimaryContainer
+                                    : theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            child: const Text('Zrušit'),
           ),
-          Consumer(
-            builder: (context, ref, child) {
-              return FilledButton(
-                onPressed: () async {
-                  try {
-                    await ref.read(folderListProvider.notifier).deleteFolder(folder.id);
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Složka byla úspěšně smazána'),
-                          backgroundColor: theme.colorScheme.primary,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Chyba: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              child: const Text('Zrušit'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+
+                try {
+                  await ref.read(folderListProvider.notifier).updateFolder(
+                    id: folder.id,
+                    name: nameController.text,
+                    color: selectedColor,
+                    icon: selectedIcon,
+                    description: descriptionController.text.isEmpty
+                        ? null
+                        : descriptionController.text,
+                  );
+
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Složka byla úspěšně upravena'),
+                        backgroundColor: theme.colorScheme.primary,
+                      ),
+                    );
                   }
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text(
-                  'Smazat',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              );
-            },
-          ),
-        ],
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Chyba: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+              ),
+              child: const Text(
+                'Uložit',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -625,9 +943,5 @@ class FolderCard extends StatelessWidget {
       default:
         return Icons.folder_outlined;
     }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}. ${date.month}. ${date.year}';
   }
 } 

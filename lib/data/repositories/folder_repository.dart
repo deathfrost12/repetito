@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:repetito/domain/entities/folder_entity.dart';
+import 'dart:developer' as developer;
 
 part 'folder_repository.g.dart';
 
@@ -14,10 +15,23 @@ class FolderRepository extends _$FolderRepository {
 
   Future<List<FolderEntity>> getFolders() async {
     final supabase = Supabase.instance.client;
+    
+    // Nejdřív získáme ID všech podsložek
+    final childFolders = await supabase
+        .from('folder_hierarchy')
+        .select('child_id');
+    
+    final childIds = childFolders
+        .map<String>((record) => record['child_id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toList();
+
+    // Pak získáme všechny složky, které nejsou podsložkami
     final response = await supabase
         .from(_tableName)
         .select()
-        .eq('user_id', supabase.auth.currentUser!.id);
+        .eq('user_id', supabase.auth.currentUser!.id)
+        .not('id', 'in', childIds);
 
     return response.map((json) {
       final now = DateTime.now();
@@ -140,10 +154,73 @@ class FolderRepository extends _$FolderRepository {
     required String deckId,
   }) async {
     final supabase = Supabase.instance.client;
-    await supabase.from(_folderDecksTable).insert({
-      'folder_id': folderId,
-      'deck_id': deckId,
-    });
+    final now = DateTime.now();
+    
+    try {
+      developer.log('Starting addDeckToFolder for folder: $folderId and deck: $deckId', name: 'FolderRepository');
+      
+      // Ověříme, že složka existuje a patří přihlášenému uživateli
+      final folder = await supabase
+          .from(_tableName)
+          .select()
+          .eq('id', folderId)
+          .eq('user_id', supabase.auth.currentUser!.id)
+          .maybeSingle();
+          
+      if (folder == null) {
+        throw Exception('Složka neexistuje nebo k ní nemáte přístup');
+      }
+      
+      developer.log('Folder exists and belongs to user', name: 'FolderRepository');
+      
+      // Ověříme, že balíček existuje a patří přihlášenému uživateli
+      final deck = await supabase
+          .from('decks')
+          .select()
+          .eq('id', deckId)
+          .eq('user_id', supabase.auth.currentUser!.id)
+          .maybeSingle();
+          
+      if (deck == null) {
+        throw Exception('Balíček neexistuje nebo k němu nemáte přístup');
+      }
+      
+      developer.log('Deck exists and belongs to user', name: 'FolderRepository');
+      
+      // Nejdřív zkontrolujeme, jestli vazba už neexistuje
+      final existing = await supabase
+          .from(_folderDecksTable)
+          .select()
+          .eq('folder_id', folderId)
+          .eq('deck_id', deckId)
+          .maybeSingle();
+      
+      developer.log('Checking existing association: $existing', name: 'FolderRepository');
+      
+      if (existing != null) {
+        developer.log('Association already exists, skipping', name: 'FolderRepository');
+        return; // Vazba už existuje, není potřeba ji vytvářet znovu
+      }
+
+      developer.log('Creating new association', name: 'FolderRepository');
+      
+      // Vytvoříme novou vazbu
+      final result = await supabase.from(_folderDecksTable).insert({
+        'folder_id': folderId,
+        'deck_id': deckId,
+        'created_at': now.toIso8601String(),
+      }).select();
+      
+      developer.log('Association created successfully: $result', name: 'FolderRepository');
+    } catch (e, stack) {
+      developer.log(
+        'Error in addDeckToFolder: $e',
+        name: 'FolderRepository',
+        error: e,
+        stackTrace: stack
+      );
+      throw Exception('Nepodařilo se přidat balíček do složky: $e');
+    }
   }
 
   Future<void> removeDeckFromFolder({
@@ -151,11 +228,16 @@ class FolderRepository extends _$FolderRepository {
     required String deckId,
   }) async {
     final supabase = Supabase.instance.client;
-    await supabase
-        .from(_folderDecksTable)
-        .delete()
-        .eq('folder_id', folderId)
-        .eq('deck_id', deckId);
+    
+    try {
+      await supabase
+          .from(_folderDecksTable)
+          .delete()
+          .eq('folder_id', folderId)
+          .eq('deck_id', deckId);
+    } catch (e) {
+      throw Exception('Nepodařilo se odebrat balíček ze složky: $e');
+    }
   }
 
   Future<List<String>> getFolderDeckIds(String folderId) async {

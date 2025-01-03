@@ -8,7 +8,6 @@ class DeckEntity with _$DeckEntity {
   const factory DeckEntity({
     required String id,
     required String userId,
-    String? folderId,
     required String name,
     String? description,
     @JsonKey(name: 'created_at') required DateTime createdAt,

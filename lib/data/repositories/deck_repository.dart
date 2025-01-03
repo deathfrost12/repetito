@@ -12,7 +12,6 @@ DeckRepository deckRepository(DeckRepositoryRef ref) {
 
 class DeckRepository {
   final SupabaseClient _client;
-  final _cache = <String, DeckEntity>{};  // Jednoduchá cache
 
   DeckRepository(this._client);
 
@@ -36,34 +35,58 @@ class DeckRepository {
   }
 
   Future<List<DeckEntity>> getDecks() async {
-    // Nejdřív zkusíme cache
-    if (_cache.isNotEmpty) {
-      return _cache.values.toList();
+    debugPrint('Getting decks from repository');
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      debugPrint('User is not logged in');
+      return [];
     }
 
-    final response = await _client.from('decks').select();
-    final decks = response.map((row) => _mapToDeckEntity(row)).toList();
-    
-    // Uložíme do cache
-    for (var deck in decks) {
-      _cache[deck.id] = deck;
+    try {
+      debugPrint('Executing SQL query: SELECT * FROM decks WHERE user_id = $userId');
+      final response = await _client
+          .from('decks')
+          .select()
+          .eq('user_id', userId);
+      
+      debugPrint('Got response from database: $response');
+      debugPrint('Got ${response.length} decks from database');
+      
+      final decks = response.map((row) {
+        debugPrint('Mapping deck row: $row');
+        return _mapToDeckEntity(row);
+      }).toList();
+      
+      debugPrint('Mapped ${decks.length} decks');
+      return decks;
+    } catch (e, stack) {
+      debugPrint('Error getting decks: $e\n$stack');
+      rethrow;
     }
-
-    return decks;
   }
 
   Stream<List<DeckEntity>> watchDecks() {
+    debugPrint('Starting deck watch stream in repository');
     final userId = _client.auth.currentUser?.id;
-    if (userId == null) throw Exception('Uživatel není přihlášen');
+    if (userId == null) {
+      debugPrint('User is not logged in, returning empty stream');
+      return Stream.value([]);
+    }
 
+    debugPrint('Setting up Supabase stream for decks table with user_id = $userId');
     return _client
         .from('decks')
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
-        .order('created_at', ascending: false)
-        .map((event) {
-          debugPrint('Received decks update: ${event.length} decks');
-          return event.map((row) => _mapToDeckEntity(row)).toList();
+        .map((response) {
+          debugPrint('Got deck update from stream: ${response.length} decks');
+          debugPrint('Raw response data: $response');
+          final decks = response.map((row) {
+            debugPrint('Mapping deck row: $row');
+            return _mapToDeckEntity(row);
+          }).toList();
+          debugPrint('Mapped ${decks.length} decks to entities');
+          return decks;
         });
   }
 
@@ -120,7 +143,6 @@ class DeckRepository {
     return DeckEntity(
       id: row['id'] as String,
       userId: row['user_id'] as String,
-      folderId: row['folder_id'] as String?,
       name: row['name'] as String,
       description: row['description'] as String?,
       createdAt: DateTime.parse(row['created_at'] as String),

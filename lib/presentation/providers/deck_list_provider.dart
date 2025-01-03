@@ -7,9 +7,17 @@ part 'deck_list_provider.g.dart';
 
 @riverpod
 Stream<List<DeckEntity>> deckList(DeckListRef ref) {
-  debugPrint('Initializing deck list stream');
+  debugPrint('Initializing deck list provider');
   final repository = ref.watch(deckRepositoryProvider);
-  return repository.watchDecks();
+  
+  debugPrint('Starting deck watch stream in provider');
+  final stream = repository.watchDecks();
+  
+  debugPrint('Listening to deck stream updates');
+  return stream.map((decks) {
+    debugPrint('Got deck update in provider: ${decks.length} decks');
+    return decks;
+  });
 }
 
 @riverpod
