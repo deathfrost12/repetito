@@ -3,7 +3,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import '../../../domain/entities/folder_entity.dart';
+import '../../../domain/enums/library_view_type.dart';
 import '../../providers/folder_list_provider.dart';
+import '../../providers/library_view_provider.dart';
+import 'widgets/folder_card.dart';
+import 'widgets/folder_grid_card.dart';
 
 class LibraryScreen extends HookConsumerWidget {
   const LibraryScreen({super.key});
@@ -14,6 +18,7 @@ class LibraryScreen extends HookConsumerWidget {
     final isSearching = useState(false);
     final searchController = useTextEditingController();
     final sortOption = useState<SortOption>(SortOption.nameAsc);
+    final viewType = ref.watch(libraryViewControllerProvider);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -59,6 +64,13 @@ class LibraryScreen extends HookConsumerWidget {
                 color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),
               onPressed: () => isSearching.value = true,
+            ),
+            IconButton(
+              icon: Icon(
+                viewType.icon,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              onPressed: () => ref.read(libraryViewControllerProvider.notifier).toggleView(),
             ),
             PopupMenuButton<SortOption>(
               icon: Icon(
@@ -321,7 +333,7 @@ class LibraryScreen extends HookConsumerWidget {
                             backgroundColor: theme.colorScheme.primary,
                           ),
                         );
-                      }
+                    }
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -404,6 +416,7 @@ class _LibraryContent extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final foldersAsync = ref.watch(folderListProvider);
+    final viewType = ref.watch(libraryViewControllerProvider);
     final theme = Theme.of(context);
     
     return foldersAsync.when(
@@ -468,38 +481,56 @@ class _LibraryContent extends HookConsumerWidget {
           return const _EmptyState();
         }
 
-        return ReorderableListView.builder(
-          buildDefaultDragHandles: false,
-          onReorder: (oldIndex, newIndex) {
-            // TODO: Implementovat změnu pořadí složek
-          },
-          padding: const EdgeInsets.all(16),
-          itemCount: filteredFolders.length,
-          itemBuilder: (context, index) {
-            final folder = filteredFolders[index];
-            return Padding(
-              key: ValueKey(folder.id),
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  ReorderableDragStartListener(
-                    index: index,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Icon(
-                        Icons.drag_indicator,
-                        color: theme.colorScheme.onSurface.withOpacity(0.3),
+        switch (viewType) {
+          case LibraryViewType.list:
+            return ReorderableListView.builder(
+              buildDefaultDragHandles: false,
+              onReorder: (oldIndex, newIndex) {
+                // TODO: Implementovat změnu pořadí složek
+              },
+              padding: const EdgeInsets.all(16),
+              itemCount: filteredFolders.length,
+              itemBuilder: (context, index) {
+                final folder = filteredFolders[index];
+                return Padding(
+                  key: ValueKey(folder.id),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      ReorderableDragStartListener(
+                        index: index,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Icon(
+                            Icons.drag_indicator,
+                            color: theme.colorScheme.onSurface.withOpacity(0.3),
+                          ),
+                        ),
                       ),
-                    ),
+                      Expanded(
+                        child: FolderCard(folder: folder),
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: FolderCard(folder: folder),
-                  ),
-                ],
-              ),
+                );
+              },
             );
-          },
-        );
+          case LibraryViewType.grid:
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: filteredFolders.length,
+              itemBuilder: (context, index) {
+                final folder = filteredFolders[index];
+                return FolderGridCard(folder: folder);
+              },
+            );
+        }
       },
     );
   }
@@ -559,135 +590,309 @@ class FolderCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    return Card(
-      color: theme.cardColor,
-      elevation: 2,
-      shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
-      clipBehavior: Clip.hardEdge,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(0.1),
-          width: 1,
+    return GestureDetector(
+      onLongPress: () => _showContextMenu(context, ref),
+      child: Card(
+        color: theme.cardColor,
+        elevation: 2,
+        shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
+        clipBehavior: Clip.hardEdge,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: theme.colorScheme.outline.withOpacity(0.1),
+            width: 1,
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          InkWell(
-            onTap: () {
-              context.pushNamed(
-                'folder_detail',
-                pathParameters: {'id': folder.id},
-                extra: folder,
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.surface,
-                    theme.colorScheme.surface.withOpacity(0.95),
-                  ],
+        child: Stack(
+          children: [
+            InkWell(
+              onTap: () {
+                context.pushNamed(
+                  'folder_detail',
+                  pathParameters: {'id': folder.id},
+                  extra: folder,
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.surface,
+                      theme.colorScheme.surface.withOpacity(0.95),
+                    ],
+                  ),
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: _getColor(folder.color).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.colorScheme.shadow.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            _getIconData(folder.icon),
-                            color: _getColor(folder.color),
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                folder.name,
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurface,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              if (folder.description?.isNotEmpty ?? false) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  folder.description!,
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                                    fontSize: 14,
-                                  ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _getColor(folder.color).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.shadow.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
                                 ),
                               ],
+                            ),
+                            child: Icon(
+                              _getIconData(folder.icon),
+                              color: _getColor(folder.color),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  folder.name,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (folder.description?.isNotEmpty ?? false) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    folder.description!,
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 16,
+                                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Vytvořeno ${_formatDate(folder.createdAt)}',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: 14,
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today,
-                              size: 16,
-                              color: theme.colorScheme.onSurface.withOpacity(0.7),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Vytvořeno ${_formatDate(folder.createdAt)}',
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface.withOpacity(0.7),
-                                fontSize: 14,
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  Icons.edit_outlined,
+                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                                onPressed: () => _showEditDialog(context, ref),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 48),
-                      ],
-                    ),
-                  ],
+                              IconButton(
+                                icon: Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red.withOpacity(0.7),
+                                ),
+                                onPressed: () => _showDeleteDialog(context, ref),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            right: 8,
-            bottom: 8,
-            child: Material(
-              type: MaterialType.transparency,
-              child: IconButton(
-                icon: Icon(
-                  Icons.edit_outlined,
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showContextMenu(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: 32,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                onPressed: () => _showEditDialog(context, ref),
               ),
+              ListTile(
+                leading: Icon(
+                  Icons.edit_outlined,
+                  color: theme.colorScheme.onSurface,
+                ),
+                title: Text(
+                  'Upravit',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 16,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showEditDialog(context, ref);
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.content_copy_outlined,
+                  color: theme.colorScheme.onSurface,
+                ),
+                title: Text(
+                  'Duplikovat',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 16,
+                  ),
+                ),
+                onTap: () async {
+                  try {
+                    await ref.read(folderListProvider.notifier).createFolder(
+                      name: '${folder.name} (kopie)',
+                      color: folder.color,
+                      icon: folder.icon,
+                      description: folder.description,
+                    );
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Složka byla úspěšně duplikována'),
+                          backgroundColor: theme.colorScheme.primary,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Chyba: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                ),
+                title: Text(
+                  'Smazat',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 16,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showDeleteDialog(context, ref);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.cardColor,
+        title: Text(
+          'Smazat složku?',
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
+        content: Text(
+          'Opravdu chcete smazat složku "${folder.name}"?\nTato akce je nevratná.',
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+            child: const Text('Zrušit'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              try {
+                await ref.read(folderListProvider.notifier).deleteFolder(folder.id);
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Složka byla úspěšně smazána'),
+                      backgroundColor: theme.colorScheme.primary,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Chyba: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text(
+              'Smazat',
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],

@@ -13,6 +13,7 @@ import '../../presentation/screens/library/library_screen.dart';
 import '../../presentation/screens/library/folder_detail_screen.dart';
 import '../../../domain/entities/deck_entity.dart';
 import '../../../domain/entities/folder_entity.dart';
+import 'dart:developer' as developer;
 
 part 'router.g.dart';
 
@@ -60,8 +61,24 @@ GoRouter router(RouterRef ref) {
         path: AppConstants.pathFolderDetail,
         name: 'folder_detail',
         builder: (context, state) {
-          final folder = state.extra as FolderEntity?;
+          final folderData = state.extra;
           final folderId = state.pathParameters['id'];
+          
+          FolderEntity? folder;
+          if (folderData is FolderEntity) {
+            folder = folderData;
+          } else if (folderData is Map<String, dynamic>) {
+            try {
+              folder = FolderEntity.fromJson(folderData);
+            } catch (e, stack) {
+              developer.log(
+                'Error converting folder data: $e',
+                name: 'Router',
+                error: e,
+                stackTrace: stack,
+              );
+            }
+          }
           
           if (folder == null && folderId != null) {
             // TODO: Načíst složku podle ID

@@ -6,6 +6,7 @@ import '../../providers/folder_list_provider.dart';
 import '../../providers/subfolder_list_provider.dart';
 import '../../providers/deck_list_provider.dart';
 import '../../providers/folder_deck_list_provider.dart';
+import '../../providers/deck_selection_provider.dart';
 import '../../../data/repositories/folder_hierarchy_repository.dart';
 import '../../../data/repositories/folder_repository.dart';
 import 'widgets/folder_detail_content.dart';
@@ -22,34 +23,69 @@ class FolderDetailScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final selectionState = ref.watch(deckSelectionControllerProvider);
+    
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text(
-          folder.name,
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontSize: 28,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: selectionState.isSelecting
+          ? Text(
+              '${selectionState.selectedDecks.length} vybráno',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          : Text(
+              folder.name,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
         elevation: 0,
+        leading: selectionState.isSelecting
+          ? IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => ref.read(deckSelectionControllerProvider.notifier).clearSelection(),
+            )
+          : IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.pop(),
+            ),
         actions: [
-          IconButton(
-            icon: Icon(
-              Icons.edit_outlined,
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+          if (selectionState.isSelecting) ...[
+            IconButton(
+              icon: const Icon(Icons.copy),
+              onPressed: () => _showDuplicateDialog(context, ref),
             ),
-            onPressed: () => _showEditDialog(context),
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.delete_outline,
-              color: Colors.red.withOpacity(0.7),
+            IconButton(
+              icon: const Icon(Icons.folder),
+              onPressed: () => _showMoveDialog(context, ref),
             ),
-            onPressed: () => _showDeleteDialog(context),
-          ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () => _showDeleteDialog(context, ref),
+            ),
+          ] else ...[
+            IconButton(
+              icon: Icon(
+                Icons.edit_outlined,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              onPressed: () => _showEditDialog(context),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.delete_outline,
+                color: Colors.red.withOpacity(0.7),
+              ),
+              onPressed: () => _showDeleteDialog(context, ref),
+            ),
+          ],
         ],
       ),
       body: FolderDetailContent(folder: folder),
@@ -699,18 +735,151 @@ class FolderDetailScreen extends HookConsumerWidget {
     );
   }
 
-  void _showDeleteDialog(BuildContext context) {
+  void _showDeleteDialog(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final selectedDecks = ref.read(deckSelectionControllerProvider).selectedDecks;
+    
+    if (selectedDecks.isEmpty) {
+      // Mazání složky
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: theme.cardColor,
+          title: Text(
+            'Smazat složku?',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          content: Text(
+            'Opravdu chcete smazat složku "${folder.name}"? Tato akce je nevratná.',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              child: const Text('Zrušit'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                try {
+                  await ref.read(folderListProvider.notifier).deleteFolder(folder.id);
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    context.pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Složka byla úspěšně smazána'),
+                        backgroundColor: theme.colorScheme.primary,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Chyba: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text(
+                'Smazat',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Mazání vybraných balíčků
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: theme.cardColor,
+          title: Text(
+            'Smazat balíčky?',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          content: Text(
+            'Opravdu chcete smazat ${selectedDecks.length} vybraných balíčků? Tato akce je nevratná.',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              child: const Text('Zrušit'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                try {
+                  for (final deck in selectedDecks) {
+                    await ref.read(deleteDeckNotifierProvider.notifier).deleteDeck(deck.id);
+                  }
+                  
+                  ref.invalidate(deckListProvider);
+                  ref.invalidate(folderDeckListProvider(folder.id));
+                  ref.read(deckSelectionControllerProvider.notifier).clearSelection();
+                  
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${selectedDecks.length} balíčků bylo smazáno'),
+                        backgroundColor: theme.colorScheme.primary,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Chyba: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text(
+                'Smazat',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _showDuplicateDialog(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final selectedDecks = ref.read(deckSelectionControllerProvider).selectedDecks;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: theme.cardColor,
         title: Text(
-          'Smazat složku?',
+          'Duplikovat balíčky',
           style: TextStyle(color: theme.colorScheme.onSurface),
         ),
         content: Text(
-          'Opravdu chcete smazat složku "${folder.name}"? Tato akce je nevratná.',
+          'Opravdu chcete duplikovat ${selectedDecks.length} vybraných balíčků?',
           style: TextStyle(color: theme.colorScheme.onSurface),
         ),
         actions: [
@@ -721,45 +890,207 @@ class FolderDetailScreen extends HookConsumerWidget {
             ),
             child: const Text('Zrušit'),
           ),
-          Consumer(
-            builder: (context, ref, child) {
-              return FilledButton(
-                onPressed: () async {
-                  try {
-                    await ref.read(folderListProvider.notifier).deleteFolder(folder.id);
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                      context.pop(); // Návrat na předchozí obrazovku
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Složka byla úspěšně smazána'),
-                          backgroundColor: theme.colorScheme.primary,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Chyba: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text(
-                  'Smazat',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              );
+          FilledButton(
+            onPressed: () async {
+              try {
+                for (final deck in selectedDecks) {
+                  await ref.read(createDeckNotifierProvider.notifier).createDeck(
+                    deck.name + ' (kopie)',
+                    deck.description,
+                  );
+                }
+                
+                ref.invalidate(deckListProvider);
+                ref.invalidate(folderDeckListProvider(folder.id));
+                ref.read(deckSelectionControllerProvider.notifier).clearSelection();
+                
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${selectedDecks.length} balíčků bylo duplikováno'),
+                      backgroundColor: theme.colorScheme.primary,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Chyba: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+            ),
+            child: const Text(
+              'Duplikovat',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showMoveDialog(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final selectedDecks = ref.read(deckSelectionControllerProvider).selectedDecks;
+    
+    showDialog(
+      context: context,
+      builder: (context) => Consumer(
+        builder: (context, ref, child) {
+          return ref.watch(folderListProvider).when(
+            loading: () => Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            error: (error, stack) => AlertDialog(
+              backgroundColor: theme.cardColor,
+              title: Text(
+                'Chyba při načítání složek',
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
+              content: Text(
+                error.toString(),
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                  child: const Text('Zavřít'),
+                ),
+              ],
+            ),
+            data: (folders) {
+              final availableFolders = folders.where((f) => f.id != folder.id).toList();
+              
+              if (availableFolders.isEmpty) {
+                return AlertDialog(
+                  backgroundColor: theme.cardColor,
+                  title: Text(
+                    'Žádné složky',
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                  ),
+                  content: Text(
+                    'Nejsou k dispozici žádné složky pro přesun balíčků.',
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      child: const Text('Zavřít'),
+                    ),
+                  ],
+                );
+              }
+
+              return AlertDialog(
+                backgroundColor: theme.cardColor,
+                title: Text(
+                  'Přesunout balíčky',
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                ),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Vyberte cílovou složku pro přesun ${selectedDecks.length} balíčků:',
+                        style: TextStyle(color: theme.colorScheme.onSurface),
+                      ),
+                      const SizedBox(height: 16),
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: availableFolders.length,
+                          itemBuilder: (context, index) {
+                            final targetFolder = availableFolders[index];
+                            return ListTile(
+                              title: Text(
+                                targetFolder.name,
+                                style: TextStyle(color: theme.colorScheme.onSurface),
+                              ),
+                              onTap: () async {
+                                try {
+                                  // Nejdřív přidáme balíčky do nové složky
+                                  for (final deck in selectedDecks) {
+                                    await ref.read(folderListProvider.notifier).addDeckToFolder(
+                                      folderId: targetFolder.id,
+                                      deckId: deck.id,
+                                    );
+                                  }
+                                  
+                                  // Pak je odebereme ze současné složky
+                                  for (final deck in selectedDecks) {
+                                    await ref.read(folderListProvider.notifier).removeDeckFromFolder(
+                                      folderId: folder.id,
+                                      deckId: deck.id,
+                                    );
+                                  }
+                                  
+                                  // Aktualizujeme UI
+                                  ref.invalidate(folderDeckListProvider(folder.id));
+                                  ref.invalidate(folderDeckListProvider(targetFolder.id));
+                                  ref.read(deckSelectionControllerProvider.notifier).clearSelection();
+                                  
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '${selectedDecks.length} balíčků bylo přesunuto do složky "${targetFolder.name}"'
+                                        ),
+                                        backgroundColor: theme.colorScheme.primary,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Chyba: $e'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                    child: const Text('Zrušit'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
       ),
     );
   }

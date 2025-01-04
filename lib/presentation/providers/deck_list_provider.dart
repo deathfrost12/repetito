@@ -25,18 +25,19 @@ class CreateDeckNotifier extends _$CreateDeckNotifier {
   @override
   FutureOr<void> build() {}
 
-  Future<void> createDeck(String name, String? description) async {
-    state = const AsyncLoading();
+  Future<DeckEntity> createDeck(String name, String? description) async {
+    debugPrint('Creating new deck: $name');
+    final repository = ref.read(deckRepositoryProvider);
+    final newDeck = await repository.createDeck(
+      name: name,
+      description: description,
+    );
     
-    state = await AsyncValue.guard(() async {
-      debugPrint('Creating new deck: $name');
-      final repository = ref.read(deckRepositoryProvider);
-      await repository.createDeck(
-        name: name,
-        description: description,
-      );
-      debugPrint('Deck created successfully');
-    });
+    // Invalidujeme seznam balíčků
+    ref.invalidate(deckListProvider);
+    
+    debugPrint('New deck created: ${newDeck.id}');
+    return newDeck;
   }
 }
 
@@ -46,12 +47,14 @@ class DeleteDeckNotifier extends _$DeleteDeckNotifier {
   FutureOr<void> build() {}
 
   Future<void> deleteDeck(String deckId) async {
-    state = const AsyncLoading();
+    debugPrint('Deleting deck: $deckId');
+    final repository = ref.read(deckRepositoryProvider);
+    await repository.deleteDeck(deckId);
     
-    state = await AsyncValue.guard(() async {
-      final repository = ref.read(deckRepositoryProvider);
-      await repository.deleteDeck(deckId);
-    });
+    // Invalidujeme seznam balíčků
+    ref.invalidate(deckListProvider);
+    
+    debugPrint('Deck deleted successfully');
   }
 }
 

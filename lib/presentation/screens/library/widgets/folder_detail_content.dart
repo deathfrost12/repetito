@@ -8,6 +8,7 @@ import '../../../providers/folder_deck_list_provider.dart';
 import '../../../providers/subfolder_list_provider.dart';
 import 'deck_card.dart';
 import 'folder_card.dart';
+import 'dart:developer' as developer;
 
 class FolderDetailContent extends HookConsumerWidget {
   final FolderEntity folder;
@@ -20,87 +21,50 @@ class FolderDetailContent extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    
+    // Sledujeme změny v seznamu podsložek
     final subfolders = ref.watch(subfolderListProvider(folder.id));
+    
+    // Sledujeme změny v seznamu balíčků a přidáme key pro vynucení rebuildu
     final decks = ref.watch(folderDeckListProvider(folder.id));
+    
+    // Přidáme listener pro automatické obnovení při změnách
+    ref.listen<AsyncValue<List<DeckEntity>>>(
+      folderDeckListProvider(folder.id),
+      (previous, next) {
+        developer.log(
+          'Folder deck list changed: ${next.value?.length ?? 0} decks',
+          name: 'FolderDetailContent',
+        );
+      },
+    );
+    
+    developer.log('Building FolderDetailContent for folder: ${folder.id}', name: 'FolderDetailContent');
+    developer.log('Current decks state: ${decks.value?.length ?? 0} decks', name: 'FolderDetailContent');
 
     return subfolders.when(
-      loading: () => Center(
-        child: CircularProgressIndicator(
-          color: theme.colorScheme.primary,
-        ),
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
       ),
       error: (error, stack) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: theme.colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Chyba při načítání obsahu složky',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: TextStyle(
-                color: theme.colorScheme.error,
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+        child: Text('Chyba při načítání podsložek: $error'),
       ),
       data: (subfolderList) => decks.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(
-            color: theme.colorScheme.primary,
-          ),
+        loading: () => const Center(
+          child: CircularProgressIndicator(),
         ),
         error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Chyba při načítání balíčků',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                style: TextStyle(
-                  color: theme.colorScheme.error,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+          child: Text('Chyba při načítání balíčků: $error'),
         ),
         data: (deckList) {
+          developer.log('Rendering folder content with ${subfolderList.length} subfolders and ${deckList.length} decks', name: 'FolderDetailContent');
+          
           if (subfolderList.isEmpty && deckList.isEmpty) {
             return _buildEmptyState(context);
           }
-
+          
           return ListView(
+            key: ValueKey('folder_content_${folder.id}_${deckList.length}'),
             cacheExtent: 100,
             padding: const EdgeInsets.all(16),
             children: [
@@ -130,10 +94,17 @@ class FolderDetailContent extends HookConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...deckList.map((deck) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: DeckCard(deck: deck),
-                )),
+                ...deckList.map((deck) {
+                  developer.log('Rendering deck card: ${deck.id} with folder ID: ${folder.id}', name: 'FolderDetailContent');
+                  return Padding(
+                    key: ValueKey('deck_${deck.id}'),
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: DeckCard(
+                      deck: deck,
+                      currentFolderId: folder.id,
+                    ),
+                  );
+                }),
               ],
             ],
           );

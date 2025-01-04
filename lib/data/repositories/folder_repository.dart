@@ -154,67 +154,48 @@ class FolderRepository extends _$FolderRepository {
     required String deckId,
   }) async {
     final supabase = Supabase.instance.client;
-    final now = DateTime.now();
     
     try {
-      developer.log('Starting addDeckToFolder for folder: $folderId and deck: $deckId', name: 'FolderRepository');
+      developer.log('Starting addDeckToFolder', name: 'FolderRepository');
+      developer.log('Adding deck $deckId to folder $folderId', name: 'FolderRepository');
       
-      // Ověříme, že složka existuje a patří přihlášenému uživateli
-      final folder = await supabase
-          .from(_tableName)
-          .select()
-          .eq('id', folderId)
-          .eq('user_id', supabase.auth.currentUser!.id)
-          .maybeSingle();
-          
-      if (folder == null) {
-        throw Exception('Složka neexistuje nebo k ní nemáte přístup');
-      }
-      
-      developer.log('Folder exists and belongs to user', name: 'FolderRepository');
-      
-      // Ověříme, že balíček existuje a patří přihlášenému uživateli
-      final deck = await supabase
-          .from('decks')
-          .select()
-          .eq('id', deckId)
-          .eq('user_id', supabase.auth.currentUser!.id)
-          .maybeSingle();
-          
-      if (deck == null) {
-        throw Exception('Balíček neexistuje nebo k němu nemáte přístup');
-      }
-      
-      developer.log('Deck exists and belongs to user', name: 'FolderRepository');
-      
-      // Nejdřív zkontrolujeme, jestli vazba už neexistuje
-      final existing = await supabase
+      // Zkontrolujeme aktuální stav
+      final before = await supabase
           .from(_folderDecksTable)
           .select()
           .eq('folder_id', folderId)
-          .eq('deck_id', deckId)
-          .maybeSingle();
+          .eq('deck_id', deckId);
+      developer.log('Current state: ${before.length} records found', name: 'FolderRepository');
       
-      developer.log('Checking existing association: $existing', name: 'FolderRepository');
+      // Přímé vložení vazby
+      final result = await supabase
+          .from(_folderDecksTable)
+          .upsert({
+            'folder_id': folderId,
+            'deck_id': deckId,
+            'created_at': DateTime.now().toIso8601String(),
+          })
+          .select();
+          
+      developer.log('Upsert result: $result', name: 'FolderRepository');
       
-      if (existing != null) {
-        developer.log('Association already exists, skipping', name: 'FolderRepository');
-        return; // Vazba už existuje, není potřeba ji vytvářet znovu
+      // Ověříme, že vazba byla vytvořena
+      final after = await supabase
+          .from(_folderDecksTable)
+          .select()
+          .eq('folder_id', folderId)
+          .eq('deck_id', deckId);
+      developer.log('After state: ${after.length} records found', name: 'FolderRepository');
+      
+      if (after.isEmpty) {
+        throw Exception('Vazba nebyla vytvořena');
       }
-
-      developer.log('Creating new association', name: 'FolderRepository');
       
-      // Vytvoříme novou vazbu
-      final result = await supabase.from(_folderDecksTable).insert({
-        'folder_id': folderId,
-        'deck_id': deckId,
-        'created_at': now.toIso8601String(),
-      }).select();
+      developer.log('Deck added to folder successfully', name: 'FolderRepository');
       
-      developer.log('Association created successfully: $result', name: 'FolderRepository');
     } catch (e, stack) {
       developer.log(
-        'Error in addDeckToFolder: $e',
+        'Error adding deck to folder: $e',
         name: 'FolderRepository',
         error: e,
         stackTrace: stack
@@ -230,12 +211,23 @@ class FolderRepository extends _$FolderRepository {
     final supabase = Supabase.instance.client;
     
     try {
+      developer.log('Starting removeDeckFromFolder', name: 'FolderRepository');
+      developer.log('Removing deck $deckId from folder $folderId', name: 'FolderRepository');
+      
       await supabase
           .from(_folderDecksTable)
           .delete()
           .eq('folder_id', folderId)
           .eq('deck_id', deckId);
-    } catch (e) {
+          
+      developer.log('Successfully removed deck from folder', name: 'FolderRepository');
+    } catch (e, stack) {
+      developer.log(
+        'Error removing deck from folder: $e',
+        name: 'FolderRepository',
+        error: e,
+        stackTrace: stack
+      );
       throw Exception('Nepodařilo se odebrat balíček ze složky: $e');
     }
   }

@@ -60,16 +60,34 @@ class FolderList extends _$FolderList {
       developer.log('Starting addDeckToFolder in FolderList provider', name: 'FolderList');
       developer.log('Adding deck $deckId to folder $folderId', name: 'FolderList');
       
+      // Nejdřív získáme aktuální stav
+      final currentState = await ref.read(folderDeckListProvider(folderId).future);
+      developer.log('Current state: ${currentState.length} decks in folder', name: 'FolderList');
+      
+      // Přidáme balíček do složky
       await ref.read(folderRepositoryProvider.notifier).addDeckToFolder(
         folderId: folderId,
         deckId: deckId,
       );
       
       developer.log('Deck added successfully, invalidating providers', name: 'FolderList');
+      
+      // Invalidujeme providery
       ref.invalidateSelf();
       ref.invalidate(folderDeckListProvider(folderId));
       
-      developer.log('Providers invalidated', name: 'FolderList');
+      // Počkáme na aktualizaci a ověříme stav
+      final newState = await ref.read(folderDeckListProvider(folderId).future);
+      developer.log('New state: ${newState.length} decks in folder', name: 'FolderList');
+      
+      final deckAdded = newState.any((d) => d.id == deckId);
+      developer.log('Deck was added: $deckAdded', name: 'FolderList');
+      
+      if (!deckAdded) {
+        throw Exception('Balíček nebyl přidán do složky');
+      }
+      
+      developer.log('Operation completed successfully', name: 'FolderList');
     } catch (e, stack) {
       developer.log(
         'Error adding deck to folder: $e',
@@ -91,7 +109,7 @@ class FolderList extends _$FolderList {
         deckId: deckId,
       );
       ref.invalidateSelf();
-      ref.invalidate(folderDeckListProvider);
+      ref.invalidate(folderDeckListProvider(folderId));
     } catch (e) {
       throw Exception('Nepodařilo se odebrat balíček ze složky: $e');
     }
