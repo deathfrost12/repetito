@@ -24,6 +24,7 @@ class LibraryScreen extends HookConsumerWidget {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        titleSpacing: 24,
         title: isSearching.value
           ? TextField(
               controller: searchController,
@@ -486,7 +487,12 @@ class _LibraryContent extends HookConsumerWidget {
             return ReorderableListView.builder(
               buildDefaultDragHandles: false,
               onReorder: (oldIndex, newIndex) {
-                // TODO: Implementovat změnu pořadí složek
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final folder = filteredFolders.removeAt(oldIndex);
+                filteredFolders.insert(newIndex, folder);
+                ref.read(folderListProvider.notifier).updateFolderOrder(filteredFolders);
               },
               padding: const EdgeInsets.all(16),
               itemCount: filteredFolders.length,

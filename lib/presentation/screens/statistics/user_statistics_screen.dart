@@ -10,8 +10,21 @@ class UserStatisticsScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statisticsAsync = ref.watch(userStatisticsProvider);
     final decksAsync = ref.watch(deckListProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text(
+          'Statistiky',
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        elevation: 0,
+      ),
       body: statisticsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Chyba: $error')),
@@ -65,14 +78,6 @@ class UserStatisticsScreen extends HookConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Celkové statistiky',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
                 _StatisticsCard(
                   title: 'Přehled studia',
                   child: Column(

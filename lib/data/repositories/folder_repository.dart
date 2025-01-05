@@ -240,4 +240,16 @@ class FolderRepository extends _$FolderRepository {
         .eq('folder_id', folderId);
     return response.map<String>((record) => record['deck_id']?.toString() ?? '').toList();
   }
+
+  Future<void> updateFolderOrder(List<String> folderIds) async {
+    final supabase = Supabase.instance.client;
+    
+    // Aktualizujeme pořadí pro každou složku
+    for (var i = 0; i < folderIds.length; i++) {
+      await supabase
+          .from(_tableName)
+          .update({'order': i})
+          .eq('id', folderIds[i]);
+    }
+  }
 } 

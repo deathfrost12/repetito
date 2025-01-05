@@ -16,7 +16,7 @@ class DeckListScreen extends HookConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'My Decks',
+          'Moje balíčky',
           style: TextStyle(
             color: theme.colorScheme.onSurface,
             fontSize: 28,
@@ -30,7 +30,7 @@ class DeckListScreen extends HookConsumerWidget {
         onPressed: () => _showCreateDeckDialog(context),
         backgroundColor: theme.colorScheme.primary,
         label: Text(
-          'New Deck',
+          'Nový balíček',
           style: TextStyle(
             color: theme.colorScheme.onPrimary,
             fontWeight: FontWeight.w600,
@@ -55,7 +55,7 @@ class DeckListScreen extends HookConsumerWidget {
       builder: (context) => AlertDialog(
         backgroundColor: theme.cardColor,
         title: Text(
-          'New Deck',
+          'Nový balíček',
           style: TextStyle(color: theme.colorScheme.onSurface),
         ),
         content: Form(
@@ -67,8 +67,8 @@ class DeckListScreen extends HookConsumerWidget {
                 controller: nameController,
                 style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
-                  labelText: 'Deck Name',
-                  hintText: 'e.g. English Vocabulary',
+                  labelText: 'Název balíčku',
+                  hintText: 'např. Anglická slovíčka',
                   labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
                   hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
                   enabledBorder: UnderlineInputBorder(
@@ -80,7 +80,7 @@ class DeckListScreen extends HookConsumerWidget {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter deck name';
+                    return 'Zadejte název balíčku';
                   }
                   return null;
                 },
@@ -91,8 +91,8 @@ class DeckListScreen extends HookConsumerWidget {
                 controller: descriptionController,
                 style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
-                  labelText: 'Description (optional)',
-                  hintText: 'e.g. Basic phrases and words',
+                  labelText: 'Popis (volitelné)',
+                  hintText: 'např. Základní fráze a slova',
                   labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
                   hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
                   enabledBorder: UnderlineInputBorder(
@@ -113,7 +113,7 @@ class DeckListScreen extends HookConsumerWidget {
             style: TextButton.styleFrom(
               foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
-            child: const Text('Cancel'),
+            child: const Text('Zrušit'),
           ),
           Consumer(
             builder: (context, ref, child) {
@@ -136,7 +136,7 @@ class DeckListScreen extends HookConsumerWidget {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: const Text('Deck created successfully'),
+                                content: const Text('Balíček byl úspěšně vytvořen'),
                                 backgroundColor: theme.colorScheme.primary,
                               ),
                             );
@@ -145,7 +145,7 @@ class DeckListScreen extends HookConsumerWidget {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Error: $e'),
+                                content: Text('Chyba: $e'),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -166,7 +166,7 @@ class DeckListScreen extends HookConsumerWidget {
                         ),
                       )
                     : const Text(
-                        'Create',
+                        'Vytvořit',
                         style: TextStyle(fontWeight: FontWeight.w600),
                       ),
               );
@@ -245,7 +245,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'No Decks Yet',
+            'Zatím žádné balíčky',
             style: TextStyle(
               color: theme.colorScheme.onSurface,
               fontSize: 20,
@@ -254,7 +254,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Create your first deck to start learning',
+            'Vytvořte svůj první balíček a začněte se učit',
             style: TextStyle(
               color: theme.colorScheme.onSurface.withOpacity(0.7),
               fontSize: 16,
@@ -373,7 +373,7 @@ class DeckCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Created ${_formatDate(deck.createdAt)}',
+                          'Vytvořeno ${_formatDate(deck.createdAt)}',
                           style: TextStyle(
                             color: theme.colorScheme.onSurface.withOpacity(0.7),
                             fontSize: 14,

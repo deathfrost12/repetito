@@ -52,6 +52,12 @@ class FolderList extends _$FolderList {
     ref.invalidateSelf();
   }
 
+  Future<void> updateFolderOrder(List<FolderEntity> folders) async {
+    final folderIds = folders.map((f) => f.id).toList();
+    await ref.read(folderRepositoryProvider.notifier).updateFolderOrder(folderIds);
+    ref.invalidateSelf();
+  }
+
   Future<void> addDeckToFolder({
     required String folderId,
     required String deckId,
