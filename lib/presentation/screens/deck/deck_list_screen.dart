@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../domain/entities/deck_entity.dart';
 import '../../providers/deck_list_provider.dart';
 import 'edit_deck_dialog.dart';
+import 'ai_deck_screen.dart';
 
 class DeckListScreen extends HookConsumerWidget {
   const DeckListScreen({super.key});
@@ -26,17 +27,78 @@ class DeckListScreen extends HookConsumerWidget {
         elevation: 0,
       ),
       body: const _DeckListContent(),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateDeckDialog(context),
+      floatingActionButton: FloatingActionButton(
+        shape: const CircleBorder(),
+        onPressed: () {
+          final theme = Theme.of(context);
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.transparent,
+            builder: (context) => Container(
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      width: 32,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.add,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      title: Text(
+                        'Nový balíček',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 16,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _showCreateDeckDialog(context);
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.auto_awesome,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      title: Text(
+                        'AI kartičky',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 16,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const AIDeckScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
         backgroundColor: theme.colorScheme.primary,
-        label: Text(
-          'Nový balíček',
-          style: TextStyle(
-            color: theme.colorScheme.onPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        icon: Icon(
+        child: Icon(
           Icons.add,
           color: theme.colorScheme.onPrimary,
         ),
@@ -169,6 +231,127 @@ class DeckListScreen extends HookConsumerWidget {
                         'Vytvořit',
                         style: TextStyle(fontWeight: FontWeight.w600),
                       ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAIGenerateDialog(BuildContext context) async {
+    final theme = Theme.of(context);
+    final nameController = TextEditingController();
+    final promptController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.cardColor,
+        title: Text(
+          'Generovat AI kartičky',
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Název balíčku',
+                  hintText: 'např. Anglická slovíčka',
+                  labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.primary),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Zadejte název balíčku';
+                  }
+                  return null;
+                },
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: promptController,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Popis pro AI',
+                  hintText: 'např. Vytvoř 20 základních anglických frází pro cestování',
+                  labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.primary),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Zadejte popis pro AI';
+                  }
+                  return null;
+                },
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+            child: const Text('Zrušit'),
+          ),
+          Consumer(
+            builder: (context, ref, child) {
+              return FilledButton(
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+
+                  try {
+                    // TODO: Implementovat generování AI kartiček
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Generování AI kartiček zatím není implementováno'),
+                          backgroundColor: theme.colorScheme.primary,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Chyba: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                ),
+                child: const Text(
+                  'Generovat',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               );
             },
           ),
