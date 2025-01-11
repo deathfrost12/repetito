@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/card_entity.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 part 'card_repository.g.dart';
 
@@ -61,6 +62,34 @@ class CardRepository {
     if (userId == null) throw Exception('Uživatel není přihlášen');
 
     try {
+      // Nejprve smažeme obrázky z úložiště
+      final cardData = await _client
+          .from('cards')
+          .select('front_image_url, back_image_url')
+          .eq('id', cardId)
+          .single();
+
+      final frontImageUrl = cardData['front_image_url'] as String?;
+      final backImageUrl = cardData['back_image_url'] as String?;
+
+      final imagesToDelete = <String>[];
+      if (frontImageUrl != null) {
+        // Extrahujeme pouze název souboru z URL
+        final frontFileName = frontImageUrl.split('/').last;
+        imagesToDelete.add(frontFileName);
+      }
+      if (backImageUrl != null) {
+        // Extrahujeme pouze název souboru z URL
+        final backFileName = backImageUrl.split('/').last;
+        imagesToDelete.add(backFileName);
+      }
+
+      if (imagesToDelete.isNotEmpty) {
+        debugPrint('Mažu obrázky: $imagesToDelete');
+        await _client.storage.from('cards').remove(imagesToDelete);
+      }
+
+      // Pak smažeme samotnou kartičku
       await _client
           .from('cards')
           .delete()

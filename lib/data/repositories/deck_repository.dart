@@ -94,11 +94,51 @@ class DeckRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Uživatel není přihlášen');
 
-    await _client
-        .from('decks')
-        .delete()
-        .eq('id', deckId)
-        .eq('user_id', userId);
+    try {
+      // Nejprve získáme všechny kartičky v balíčku
+      final cards = await _client
+          .from('cards')
+          .select('id, front_image_url, back_image_url')
+          .eq('deck_id', deckId);
+
+      // Smažeme obrázky všech kartiček
+      final imagesToDelete = <String>[];
+      for (final card in cards) {
+        final frontImageUrl = card['front_image_url'] as String?;
+        final backImageUrl = card['back_image_url'] as String?;
+        
+        if (frontImageUrl != null) {
+          // Extrahujeme pouze název souboru z URL
+          final frontFileName = frontImageUrl.split('/').last;
+          imagesToDelete.add(frontFileName);
+        }
+        if (backImageUrl != null) {
+          // Extrahujeme pouze název souboru z URL
+          final backFileName = backImageUrl.split('/').last;
+          imagesToDelete.add(backFileName);
+        }
+      }
+
+      if (imagesToDelete.isNotEmpty) {
+        debugPrint('Mažu obrázky: $imagesToDelete');
+        await _client.storage.from('cards').remove(imagesToDelete);
+      }
+
+      // Smažeme všechny kartičky v balíčku
+      await _client
+          .from('cards')
+          .delete()
+          .eq('deck_id', deckId);
+
+      // Nakonec smažeme samotný balíček
+      await _client
+          .from('decks')
+          .delete()
+          .eq('id', deckId)
+          .eq('user_id', userId);
+    } catch (e) {
+      throw Exception('Chyba při mazání balíčku: $e');
+    }
   }
 
   Future<DeckEntity> updateDeck({
