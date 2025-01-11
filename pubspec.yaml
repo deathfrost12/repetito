@@ -27,6 +27,7 @@ dependencies:
   logging: ^1.2.0
   uuid: ^4.3.3
   fl_chart: ^0.66.2
+  path_provider: ^2.1.2
   
   # JSON serialization
   json_annotation: ^4.9.0
@@ -34,6 +35,9 @@ dependencies:
   url_strategy: ^0.2.0
   universal_html: ^2.2.4
   shared_preferences: ^2.3.3
+  cupertino_icons: ^1.0.2
+  image_picker: ^1.0.7
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

@@ -350,8 +350,8 @@ class DeckListScreen extends HookConsumerWidget {
                 ),
                 child: const Text(
                   'Generovat',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
               );
             },
           ),

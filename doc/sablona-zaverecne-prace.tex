@@ -3,7 +3,7 @@
 % Autor: Jakub Dokulil (kubadokulil99@gmail.com)
 % Tato šablona byla vytvořena tak, aby pomocí ní mohli v systému LaTeX soutěžící sázet své práce a zároveň odpovídala požadavkům na formátování vyplývajícím z wordové šablony umístěné na webu soc.cz.
 %
-\documentclass[12pt, a4paper, twoside, openright]{report}
+\documentclass[12pt, a4paper, oneside]{report}
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -30,7 +30,7 @@
 \author{\jmenoAutora} %% -- tvé jméno
 \date{\datumOdevzdani} %% -- rok, kdy píšeš SOČku
 
-\usepackage[top=2.5cm, bottom=2.5cm, left=3.5cm, right=1.5cm]{geometry} %% nastaví okraje, left -- vnitřní okraj, right -- vnější okraj
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry} %% nastaví okraje symetricky
 
 \usepackage[czech]{babel} %% balík babel pro sazbu v češtině
 \usepackage[utf8]{inputenc} %% balíky pro kódování textu
@@ -283,7 +283,7 @@
 	\pagestyle{empty}
 	\pagenumbering{arabic}
 	
-	\cleardoublepage
+	\clearpage
 
 %% Titulní stránka s informacemi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -292,7 +292,7 @@
 		%% Logo školy
 		\begin{figure}[h]
 			\centering
-			\includegraphics[width=0.6\linewidth]{image/logo-skoly.png}
+			\includegraphics[width=0.6\linewidth]{../image/logo-skoly.png}
 		\end{figure}
 		
 		
@@ -310,7 +310,7 @@
 		
 		\begin{figure}[h]
 			\centering
-			\includegraphics[width=0.8\linewidth]{image/screenshot-main.jpg}
+			\includegraphics[width=0.55\linewidth]{../image/screenshot-main.png}
 			\label{fig:main-screen}
 		\end{figure}
 		
@@ -327,10 +327,10 @@
 		\end{table}		
 	}
 	
-\cleardoublepage %% Zalomení dvojstránky
+	\clearpage %% Zalomení stránky
 	
 	\tableofcontents
-	\cleardoublepage
+	\clearpage
 
 %% Stránka obsahující poděkování a prohlášení
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -360,14 +360,13 @@
 		\end{tabular}
 	\end{minipage}
 	
-	\cleardoublepage %% Zalomení dvojstránky
+	\clearpage %% Zalomení stránky
 
 %% Stránka obsahující abstrakt (anotaci)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 %% Abstrakt v češtině
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\noindent{\Large{\bfseries{Abstrakt}\\}}
-	\addcontentsline{toc}{chapter}{Abstrakt}
 	Mobilní aplikace Repetito je vzdělávací nástroj využívající metodu spaced repetition pro efektivní učení a zapamatování informací. Aplikace je implementována pomocí frameworku Flutter s využitím Riverpod pro správu stavu a Supabase jako backend řešení. Dokumentace popisuje architekturu aplikace, implementační detaily a způsoby řešení. Důraz je kladen na offline funkcionalitu a synchronizaci dat mezi zařízeními.
 
 	\vspace{18pt}
@@ -383,19 +382,6 @@
 	\noindent{\large{\bfseries{Keywords}}}
 
 	\noindent Flutter, Riverpod, Supabase, spaced repetition, mobile application, education
-
-	\chapter*{Seznam použitých zkratek}
-	\addcontentsline{toc}{chapter}{Seznam použitých zkratek}
-	\begin{tabular}{ll}
-		API & Application Programming Interface,\\
-		CRUD & Create, Read, Update, Delete,\\
-		HTTP & Hypertext Transfer Protocol,\\
-		JSON & JavaScript Object Notation,\\
-		REST & Representational State Transfer,\\
-		SQL & Structured Query Language,\\
-		UI & User Interface,\\
-		UX & User Experience.\\
-	\end{tabular}
 
 %% Definice příkazu pro podnadpisy v úvodu
 \newcommand{\introsubheading}[1]{%
@@ -425,7 +411,7 @@ Práce je rozdělena do několika hlavních částí. První kapitola se zabýv�
 	Spaced repetition (učení s rozestupy) je technika učení založená na opakování informací v optimálních časových intervalech. Tato metoda vychází z poznatků kognitivní psychologie a výzkumů lidské paměti. Základním principem je, že čím lépe si pamatujeme určitou informaci, tím del��í může být interval do dalšího opakování.
 
 	\subsection{Historie a výzkum}
-	Historie metody spaced repetition sahá do konce 19. stolet��, kdy německý psycholog Hermann Ebbinghaus provedl prokopnický experimenty v oblasti lidské paměti. Jeho výzkum, publikovaný v roce 1885 v díle "Über das Gedächtnis"(O paměti), položil základy pro pochopení procesu zapomínání a učení.
+	Historie metody spaced repetition sahá do konce 19. století, kdy německý psycholog Hermann Ebbinghaus provedl prokopnický experimenty v oblasti lidské paměti. Jeho výzkum, publikovaný v roce 1885 v díle "Über das Gedächtnis"(O paměti), položil základy pro pochopení procesu zapomínání a učení.
 
 	Ebbinghausovy experimenty byly unikátní svou metodologií:
 	\begin{itemize}
@@ -444,7 +430,7 @@ Práce je rozdělena do několika hlavních částí. První kapitola se zabýv�
 	\subsection{Ebbinghausova křivka zapomínání}
 	Ebbinghausova křivka zapomínání je matematický model popisující, jak rychle zapomínáme nově naučené informace. Křivka ukazuje, že:
 	\begin{itemize}
-		\item Největší ztráta informací nastává v prvních hodinách po učen��.
+		\item Největší ztráta informací nastává v prvních hodinách po učení.
 		\item Po 24 hodinách si pamatujeme pouze 40\% naučeného.
 		\item Po týdnu klesá retence na přibližně 20\%.
 		\item Opakování v správných intervalech výrazně zpomaluje proces zapomínání.
@@ -539,7 +525,7 @@ Práce je rozdělena do několika hlavních částí. První kapitola se zabýv�
 		\item Bohatá sada předpřipravených Material a Cupertino widgetů
 		\item Vysoký výkon díky kompilaci do nativního kódu
 		\item Jednotná codebáze pro všechny podporované platformy
-		\item Deklarativní p��ístup k tvorbě UI
+		\item Deklarativní pístup k tvorbě UI
 	\end{itemize}
 
 	\section{Riverpod}
@@ -568,12 +554,12 @@ Práce je rozdělena do několika hlavních částí. První kapitola se zabýv�
 
 	\begin{figure}[h]
 		\centering
-		\includegraphics[width=0.8\linewidth]{image/diagram-databaze.png}
+		\includegraphics[width=\linewidth]{../image/diagram-databaze.png}
 		\caption{ER diagram databáze}
 		\label{fig:database}
 	\end{figure}
 
-	Klíčové funkce Supabase:
+	Klíčové funkce Supabase
 	\begin{itemize}
 		\item PostgreSQL databáze
 		\item Realtime subscriptions
@@ -612,7 +598,7 @@ Práce je rozdělena do několika hlavních částí. První kapitola se zabýv�
 
 	\begin{figure}[h]
 		\centering
-		\includegraphics[width=0.8\linewidth]{image/diagram-architektura.png}
+		\includegraphics[width=0.8\linewidth]{../image/diagram-architektura.png}
 		\caption{Architektura aplikace}
 		\label{fig:architecture}
 	\end{figure}
@@ -657,7 +643,7 @@ class CardEntity with _$CardEntity {
     required String back,        // Zadní strana (odpověď)
     required DateTime createdAt, // Datum vytvoření
     required DateTime updatedAt, // Datum poslední změny
-    @Default(false) bool isDeleted,  // Příznak smazán��
+    @Default(false) bool isDeleted,  // Příznak smazán
   }) = _CardEntity;
 
   // Deserializace z JSON
@@ -669,37 +655,18 @@ class CardEntity with _$CardEntity {
 \chapter{Implementace}
 	\section{Frontend implementace}
 	\subsection{Uživatelské rozhraní}
-	Design uživatelského rozhraní následuje principy Material Design 3. Návrh rozhraní začal vytvořením wireframů klíčových obrazovek:
+	Design uživatelského rozhraní následuje principy Material Design 3. Aplikace byla implementována s důrazem na intuitivní ovládání a příjemný uživatelský zážitek:
 
 	\begin{figure}[h]
 		\centering
 		\begin{subfigure}[b]{0.48\textwidth}
-			\includegraphics[width=\linewidth]{image/wireframe-main.png}
-			\caption{Wireframe hlavní obrazovky}
-			\label{fig:wireframe-main}
-		\end{subfigure}
-		\hfill
-		\begin{subfigure}[b]{0.48\textwidth}
-			\includegraphics[width=\linewidth]{image/wireframe-study.png}
-			\caption{Wireframe obrazovky studia}
-			\label{fig:wireframe-study}
-		\end{subfigure}
-		\caption{Wireframy klíčových obrazovek}
-		\label{fig:wireframes}
-	\end{figure}
-
-	Na základě wireframů byla implementována finální podoba aplikace:
-
-	\begin{figure}[h]
-		\centering
-		\begin{subfigure}[b]{0.48\textwidth}
-			\includegraphics[width=\linewidth]{image/screen-deck-list.png}
+			\includegraphics[width=0.75\linewidth]{../image/screen-deck-list.png}
 			\caption{Seznam balíčků}
 			\label{fig:screen-decks}
 		\end{subfigure}
 		\hfill
 		\begin{subfigure}[b]{0.48\textwidth}
-			\includegraphics[width=\linewidth]{image/screen-deck-detail.png}
+			\includegraphics[width=0.75\linewidth]{../image/screen-deck-detail.png}
 			\caption{Detail balíčku}
 			\label{fig:screen-detail}
 		\end{subfigure}
@@ -710,13 +677,13 @@ class CardEntity with _$CardEntity {
 	\begin{figure}[h]
 		\centering
 		\begin{subfigure}[b]{0.48\textwidth}
-			\includegraphics[width=\linewidth]{image/screen-study.png}
+			\includegraphics[width=0.75\linewidth]{../image/screen-study.png}
 			\caption{Obrazovka studia}
 			\label{fig:screen-study}
 		\end{subfigure}
 		\hfill
 		\begin{subfigure}[b]{0.48\textwidth}
-			\includegraphics[width=\linewidth]{image/screen-statistics.png}
+			\includegraphics[width=0.75\linewidth]{../image/screen-statistics.png}
 			\caption{Statistiky učení}
 			\label{fig:screen-stats}
 		\end{subfigure}
@@ -731,6 +698,8 @@ class CardEntity with _$CardEntity {
 		\item Plynulé animace a přechody
 		\item Konzistentní typografie a barevné schéma
 		\item Přístupné ovládací prvky
+		\item Intuitivní navigace mezi obrazovkami
+		\item Přehledné zobrazení statistik a pokroku
 	\end{itemize}
 
 	\section{Backend implementace}
@@ -821,63 +790,6 @@ Future<List<CardEntity>> cardList(
 }
 	\end{lstlisting}
 
-	\section{Offline funkcionalita}
-	Implementace offline režimu je založena na lokální SQLite databázi.
-
-	Klíčové aspekty offline funkcionality:
-	\begin{itemize}
-		\item Plnohodnotná práce bez připojení k internetu
-		\item Automatická synchronizace při obnovení připojení
-		\item Sofistikované řešení konfliktů
-		\item Queue systém pro operace
-		\item Garance konzistence dat
-	\end{itemize}
-
-	\begin{figure}[h]
-		\centering
-		\includegraphics[width=0.8\linewidth]{image/diagram-sync.png}
-		\caption{Diagram synchronizace dat}
-		\label{fig:sync}
-	\end{figure}
-
-	Implementace offline funkcionality je založena na lokální SQLite databázi a systému front pro synchronizaci změn. Následující ukázka představuje implementaci synchronizačního manageru.
-
-	\begin{lstlisting}[style=Python, caption=Implementace synchronizace]
-class SyncManager {
-  final SupabaseClient _client;    // Klient pro Supabase
-  final LocalDatabase _localDb;    // Lokální databáze
-
-  SyncManager(this._client, this._localDb);
-
-  Future<void> synchronize() async {
-    // Kontrola připojení k internetu
-    if (!await _hasInternetConnection()) {
-      debugPrint('Není připojení k internetu, synchronizace přeskočena');
-      return;
-    }
-
-    try {
-      // Proces synchronizace
-      final localChanges = await _getLocalChanges();
-      final serverChanges = await _getServerChanges();
-      
-      // Řešení konfliktů a aplikace změn
-      final resolvedChanges = await _resolveConflicts(
-        localChanges,
-        serverChanges,
-      );
-      await _applyChangesToServer(resolvedChanges.serverUpdates);
-      await _updateLocalDatabase(resolvedChanges.localUpdates);
-      
-      debugPrint('Synchronizace úspěšně dokončena');
-    } catch (e) {
-      debugPrint('Chyba při synchronizaci: $e');
-      rethrow;
-    }
-  }
-}
-	\end{lstlisting}
-
 \chapter{Výsledky a zhodnocení}
 	\section{Splněné cíle}
 	V rámci projektu se mi podařilo úspěšně implementovat všechny klíčové funkcionality a dosáhnout významných výsledků v oblasti mobilního vzdělávání.
@@ -885,12 +797,11 @@ class SyncManager {
 	Dosažené milníky:
 	\begin{itemize}
 		\item Implementace algoritmu Spaced Repetition pro efektivní učení
-		\item Realizace robustní offline funkcionality s automatickou synchronizací
 		\item Vytvoření intuitivního uživatelského rozhraní s důrazem na UX
 		\item Optimalizace výkonu aplikace a efektivní využití systémových zdrojů
-		\item Implementace spolehlivého systému synchronizace mezi zařízeními
+		\item Implementace pokročilých statistik učení
 		\item Vytvoření komplexního systému pro správu učebních sad
-		\item Zajištění bezpečného ukládání a přenosu dat
+		\item Zajištění bezpečného ukládání dat
 		\item Vytvoření solidního základu pro budoucí rozšíření
 	\end{itemize}
 
@@ -901,8 +812,7 @@ class SyncManager {
 	\begin{itemize}
 		\item Moderní technologický stack využívající Flutter, Riverpod a Supabase
 		\item Efektivní implementace Spaced Repetition algoritmu pro optimální učení
-		\item Robustní offline funkcionalita umožňující práci bez připojení k internetu
-		\item Spolehlivá synchronizace dat mezi zařízeními
+		\item Pokročilý systém statistik a sledování pokroku
 		\item Intuitivní uživatelské rozhraní s důrazem na UX
 	\end{itemize}
 
@@ -913,7 +823,6 @@ class SyncManager {
 	\begin{itemize}
 		\item Implementace nových typů učebního obsahu (audio, video)
 		\item Rozšíření statistik učení o pokročilé analytické nástroje
-		\item Optimalizace výkonu a snížení spotřeby baterie
 		\item Přidání gamifikačních prvků pro zvýšení motivace
 		\item Integrace umělé inteligence pro personalizaci učebního procesu
 		\item Rozšíření možností sdílení a spolupráce mezi uživateli
@@ -922,7 +831,7 @@ class SyncManager {
 \chapter{Závěr}
 	Mobilní aplikace Repetito představuje komplexní řešení pro efektivní učení pomocí metody spaced repetition. Projekt jsem rozdělil do tří hlavních částí: frontend aplikace vyvinuté ve frameworku Flutter, backend infrastruktury postavené na Supabase a sofistikovaného algoritmu pro optimalizaci učebního procesu.
 
-	V aplikaci jsem úspěšně implementoval všechny klíčové funkcionality včetně správy učebních sad, offline režimu a synchronizace mezi zařízeními. Důraz jsem kladl na vytvoření intuitivního uživatelského rozhraní a optimalizaci výkonu. Využitím moderních technologií jako Riverpod pro správu stavu a Freezed pro generování kódu jsem zajistil robustní a udržitelnou architekturu.
+	V aplikaci jsem úspěšně implementoval všechny klíčové funkcionality včetně správy učebních sad a pokročilého systému statistik. Důraz jsem kladl na vytvoření intuitivního uživatelského rozhraní a optimalizaci výkonu. Využitím moderních technologií jako Riverpod pro správu stavu a Freezed pro generování kódu jsem zajistil robustní a udržitelnou architekturu.
 
 	V průběhu vývoje jsem identifikoval možnosti dalšího rozvoje, které by mohly aplikaci posunout na další úroveň. Mezi hlavní plánovaná vylepšení patří implementace pokročilých statistik učení, integrace multimediálního obsahu a přidání gamifikačních prvků. Potenciál aplikace vidím nejen v individuálním vzdělávání, ale také ve školním prostředí nebo firemním vzdělávání.
 
