@@ -115,9 +115,3 @@ lib/
 Daniel Holeš
 - GitHub: [@deathfrost12](https://github.com/deathfrost12)
 - Email: holes.daniel@gmail.com
-
-## 10. Licence
-
-MIT
-
-[Vyzkoušet aplikaci](https://danielholes.github.io/repetito/)
